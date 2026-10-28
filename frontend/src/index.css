@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pm-primary: #2F80ED;
+  --color-pm-primary-dark: #1F6AD0;
+  --color-pm-light: #D9EAFE;
+  --color-pm-bg: #BBD8F5;
+  --color-pm-card: #FFFFFF;
+  --color-pm-text: #172338;
+  --color-pm-muted: #687587;
+  --color-pm-border: #E5EDF7;
+  --color-pm-success: #20B486;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #172338;
+  background-color: #F4F8FD;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #F4F8FD;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Glass & Card styles */
+.pm-card {
+  background: #FFFFFF;
+  border: 1px solid #E5EDF7;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px -2px rgba(47, 128, 237, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pm-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pm-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -4px rgba(47, 128, 237, 0.12);
+}
+
+.pm-badge-soft {
+  background: #D9EAFE;
+  color: #2F80ED;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Smooth active tab & button transitions */
+button, a {
+  transition: all 0.2s ease-in-out;
+}
+
+/* ==========================================================================
+   Dark Mode System
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark #root {
+  background-color: #0b1329 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .bg-\[\#F4F8FD\] {
+  background-color: #0b1329 !important;
+}
+
+html.dark .bg-white {
+  background-color: #151f38 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .text-\[\#172338\] {
+  color: #f8fafc !important;
+}
+
+html.dark .text-\[\#687587\] {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-\[\#E5EDF7\] {
+  border-color: #243253 !important;
+}
+
+html.dark header {
+  background-color: rgba(21, 31, 56, 0.95) !important;
+  border-color: #243253 !important;
+}
+
+html.dark footer {
+  background-color: #0b1329 !important;
+  border-color: #243253 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f182d !important;
+  color: #f8fafc !important;
+  border-color: #243253 !important;
+}
+
+html.dark .pm-card {
+  background: #151f38 !important;
+  border-color: #243253 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .pm-badge-soft {
+  background: rgba(47, 128, 237, 0.25) !important;
+  color: #60a5fa !important;
+}
+
+html.dark .bg-\[\#D9EAFE\]\/40,
+html.dark .bg-\[\#D9EAFE\]\/60,
+html.dark .bg-\[\#D9EAFE\]\/30 {
+  background-color: rgba(47, 128, 237, 0.2) !important;
+}
+
+html.dark .bg-\[\#D9EAFE\] {
+  background-color: rgba(47, 128, 237, 0.25) !important;
+  color: #93c5fd !important;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0b1329;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #243253;
+}
+

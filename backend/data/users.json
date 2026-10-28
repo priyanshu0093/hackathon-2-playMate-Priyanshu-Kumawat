@@ -1,0 +1,37 @@
+[
+  {
+    "id": "usr_me",
+    "name": "Alex Morgan",
+    "email": "alex.morgan@playmate.io",
+    "role": "player",
+    "city": "Bangalore",
+    "phone": "+91 98765 43210",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+    "bio": "Midfielder on the pitch, aggressive badminton smasher on weekends.",
+    "rating": 4.9,
+    "matchesPlayed": 42,
+    "hostedCount": 12,
+    "onTimeRate": "98%",
+    "fairPlayScore": "5.0 / 5"
+  },
+  {
+    "id": "usr_owner_1",
+    "name": "Sunil Rao",
+    "email": "sunil@kickoffarena.com",
+    "role": "owner",
+    "city": "Bangalore",
+    "phone": "+91 99887 76655",
+    "venueId": "ground_1",
+    "venueName": "Kickoff Arena Turf"
+  },
+  {
+    "id": "usr_owner_pune",
+    "name": "Vikram Patil",
+    "email": "vikram@puneturf.com",
+    "role": "owner",
+    "city": "Pune",
+    "phone": "+91 98230 11223",
+    "venueId": "ground_1793188984294",
+    "venueName": "Shivajinagar Pro Turf Arena"
+  }
+]

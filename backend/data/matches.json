@@ -1,0 +1,378 @@
+[
+  {
+    "id": "match_1",
+    "title": "Saturday Night 7v7 Football Clash",
+    "sport": "Football",
+    "coverImage": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_1",
+      "name": "Rohan Sharma",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.8,
+      "verified": true
+    },
+    "date": "Today, 28 Oct",
+    "time": "8:00 PM - 9:30 PM",
+    "duration": "1.5 hrs",
+    "venue": "Kickoff Arena Turf, Indiranagar",
+    "venueId": "ground_1",
+    "distance": "1.8 km away",
+    "city": "Bangalore",
+    "playersJoined": 11,
+    "totalSpots": 14,
+    "pricePerPerson": 220,
+    "totalCost": 3080,
+    "skillLevel": "Intermediate",
+    "status": "Almost Full",
+    "isPublic": true,
+    "description": "Competitive yet friendly 7v7 football under floodlights. High tempo game with bibs and match ball provided.",
+    "rules": [
+      "Turf shoes or flat studs only",
+      "Reach 15 mins before kick-off"
+    ],
+    "roster": [
+      {
+        "id": "usr_me",
+        "name": "Alex Morgan",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        "role": "Midfielder",
+        "status": "Confirmed"
+      },
+      {
+        "id": "usr_1",
+        "name": "Rohan Sharma (Host)",
+        "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+        "role": "Defender",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_2",
+    "title": "Sunday Morning Box Cricket Frenzy",
+    "sport": "Cricket",
+    "coverImage": "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_6",
+      "name": "Aditya Nair",
+      "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.9,
+      "verified": true
+    },
+    "date": "Tomorrow, 29 Oct",
+    "time": "7:00 AM - 9:00 AM",
+    "duration": "2.0 hrs",
+    "venue": "SkyTurf Sports Club, Koramangala",
+    "venueId": "ground_2",
+    "distance": "3.2 km away",
+    "city": "Bangalore",
+    "playersJoined": 9,
+    "totalSpots": 16,
+    "pricePerPerson": 180,
+    "totalCost": 2880,
+    "skillLevel": "All Levels",
+    "status": "Spots Available",
+    "isPublic": true,
+    "description": "Weekend morning box cricket! Leather bounce tennis balls, quality bats provided.",
+    "rules": [
+      "Over the roof boundary is out",
+      "Arrive by 6:50 AM"
+    ],
+    "roster": [
+      {
+        "id": "usr_6",
+        "name": "Aditya Nair (Host)",
+        "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+        "role": "All-Rounder",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_3",
+    "title": "Advanced Badminton Doubles Sparring",
+    "sport": "Badminton",
+    "coverImage": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_9",
+      "name": "Tanya Sengupta",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      "rating": 5,
+      "verified": true
+    },
+    "date": "Tomorrow, 29 Oct",
+    "time": "6:30 PM - 8:00 PM",
+    "duration": "1.5 hrs",
+    "venue": "Velocity Badminton Hub, HSR Layout",
+    "venueId": "ground_3",
+    "distance": "4.5 km away",
+    "city": "Bangalore",
+    "playersJoined": 4,
+    "totalSpots": 4,
+    "pricePerPerson": 160,
+    "totalCost": 640,
+    "skillLevel": "Advanced",
+    "status": "Full",
+    "isPublic": true,
+    "description": "High intensity Yonex feather shuttle sparring for tournament level badminton.",
+    "rules": [
+      "Non-marking shoes compulsory",
+      "Yonex feather shuttles provided"
+    ],
+    "roster": [
+      {
+        "id": "usr_9",
+        "name": "Tanya Sengupta (Host)",
+        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+        "role": "Player",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_mumbai_1",
+    "title": "Bandra Sunset 5v5 Football League",
+    "sport": "Football",
+    "coverImage": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_mb_1",
+      "name": "Aryan Dsouza",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.9,
+      "verified": true
+    },
+    "date": "Today, 28 Oct",
+    "time": "6:30 PM - 8:00 PM",
+    "duration": "1.5 hrs",
+    "venue": "Bandra Urban Sports Arena",
+    "venueId": "ground_mumbai_1",
+    "distance": "2.1 km away",
+    "city": "Mumbai",
+    "playersJoined": 8,
+    "totalSpots": 10,
+    "pricePerPerson": 250,
+    "totalCost": 2500,
+    "skillLevel": "Intermediate",
+    "status": "Spots Available",
+    "isPublic": true,
+    "description": "Fast paced 5v5 rooftop game near Carter Road. Cool coastal breeze, high tempo ball play.",
+    "rules": [
+      "Turf flat soles only",
+      "Bibs provided"
+    ],
+    "roster": [
+      {
+        "id": "usr_mb_1",
+        "name": "Aryan Dsouza (Host)",
+        "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+        "role": "Host",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_mumbai_2",
+    "title": "Andheri Saturday Night Box Cricket",
+    "sport": "Cricket",
+    "coverImage": "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_mb_2",
+      "name": "Nikhil Kothari",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.8,
+      "verified": true
+    },
+    "date": "Tomorrow, 29 Oct",
+    "time": "8:00 PM - 10:00 PM",
+    "duration": "2.0 hrs",
+    "venue": "Andheri Kickbox & Padel Club",
+    "venueId": "ground_mumbai_2",
+    "distance": "3.6 km away",
+    "city": "Mumbai",
+    "playersJoined": 10,
+    "totalSpots": 14,
+    "pricePerPerson": 200,
+    "totalCost": 2800,
+    "skillLevel": "All Levels",
+    "status": "Spots Available",
+    "isPublic": true,
+    "description": "Competitive box cricket with heavy tennis balls. Powerplay overs and boundary net rules.",
+    "rules": [
+      "Direct roof hit is out",
+      "1 drop 1 hand catch valid"
+    ],
+    "roster": [
+      {
+        "id": "usr_mb_2",
+        "name": "Nikhil Kothari (Host)",
+        "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+        "role": "Captain",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_delhi_1",
+    "title": "Gurugram Floodlit 7v7 Corporate Derby",
+    "sport": "Football",
+    "coverImage": "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_dl_1",
+      "name": "Kunal Grover",
+      "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.7,
+      "verified": true
+    },
+    "date": "Today, 28 Oct",
+    "time": "7:30 PM - 9:00 PM",
+    "duration": "1.5 hrs",
+    "venue": "CyberTurf Sports Park, Gurugram",
+    "venueId": "ground_delhi_1",
+    "distance": "2.5 km away",
+    "city": "Delhi NCR",
+    "playersJoined": 12,
+    "totalSpots": 14,
+    "pricePerPerson": 240,
+    "totalCost": 3360,
+    "skillLevel": "Intermediate",
+    "status": "Almost Full",
+    "isPublic": true,
+    "description": "High energy 7v7 football under Cyber City floodlights. Quality match ball and bibs provided.",
+    "rules": [
+      "Rubber studs only",
+      "Fair play strictly observed"
+    ],
+    "roster": [
+      {
+        "id": "usr_dl_1",
+        "name": "Kunal Grover (Host)",
+        "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
+        "role": "Host",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_pune_1",
+    "title": "FC Road Deccan 6v6 Football Showdown",
+    "sport": "Football",
+    "coverImage": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_pn_1",
+      "name": "Pranav Joshi",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.9,
+      "verified": true
+    },
+    "date": "Today, 28 Oct",
+    "time": "7:00 PM - 8:30 PM",
+    "duration": "1.5 hrs",
+    "venue": "Deccan Sports Turf & Box Club",
+    "venueId": "ground_pune_1",
+    "distance": "1.5 km away",
+    "city": "Pune",
+    "playersJoined": 10,
+    "totalSpots": 12,
+    "pricePerPerson": 190,
+    "totalCost": 2280,
+    "skillLevel": "Intermediate",
+    "status": "Spots Available",
+    "isPublic": true,
+    "description": "Fast 6v6 evening game right on FC Road! All skill levels welcome, good vibe and chilled water provided.",
+    "rules": [
+      "Turf flat soles only",
+      "Please reach on time"
+    ],
+    "roster": [
+      {
+        "id": "usr_pn_1",
+        "name": "Pranav Joshi (Host)",
+        "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+        "role": "Host",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_pune_2",
+    "title": "Koregaon Park Pickleball Doubles Rally",
+    "sport": "Pickleball",
+    "coverImage": "https://images.unsplash.com/photo-1628891435222-065925dcb365?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_pn_2",
+      "name": "Ria Sawant",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.8,
+      "verified": true
+    },
+    "date": "Tomorrow, 29 Oct",
+    "time": "6:00 PM - 7:30 PM",
+    "duration": "1.5 hrs",
+    "venue": "Koregaon Park Smash Arena",
+    "venueId": "ground_pune_2",
+    "distance": "3.1 km away",
+    "city": "Pune",
+    "playersJoined": 4,
+    "totalSpots": 4,
+    "pricePerPerson": 150,
+    "totalCost": 600,
+    "skillLevel": "All Levels",
+    "status": "Full",
+    "isPublic": true,
+    "description": "Friendly social pickleball doubles rally. Paddles and outdoor balls provided at the court.",
+    "rules": [
+      "Non-marking shoes",
+      "Kitchen rule strictly followed"
+    ],
+    "roster": [
+      {
+        "id": "usr_pn_2",
+        "name": "Ria Sawant (Host)",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        "role": "Host",
+        "status": "Host"
+      }
+    ]
+  },
+  {
+    "id": "match_hyd_1",
+    "title": "Madhapur Midnight Box Cricket Tournament",
+    "sport": "Cricket",
+    "coverImage": "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80",
+    "host": {
+      "id": "usr_hyd_1",
+      "name": "Sravan Teja",
+      "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      "rating": 4.8,
+      "verified": true
+    },
+    "date": "Today, 28 Oct",
+    "time": "9:00 PM - 11:00 PM",
+    "duration": "2.0 hrs",
+    "venue": "HITEC City Sports Club",
+    "venueId": "ground_hyd_1",
+    "distance": "2.0 km away",
+    "city": "Hyderabad",
+    "playersJoined": 11,
+    "totalSpots": 16,
+    "pricePerPerson": 180,
+    "totalCost": 2880,
+    "skillLevel": "All Levels",
+    "status": "Spots Available",
+    "isPublic": true,
+    "description": "Weekend floodlight box cricket in Madhapur. Chilled energy drinks and floodlit boundary thrill!",
+    "rules": [
+      "Box cricket rules apply",
+      "Reach 10 mins early"
+    ],
+    "roster": [
+      {
+        "id": "usr_hyd_1",
+        "name": "Sravan Teja (Host)",
+        "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+        "role": "Host",
+        "status": "Host"
+      }
+    ]
+  }
+]

@@ -18,3 +18,4 @@ export const apiUrl = (endpoint) => {
 };
 
 export default apiUrl;
+

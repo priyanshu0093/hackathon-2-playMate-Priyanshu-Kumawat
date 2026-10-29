@@ -15,6 +15,10 @@ dist-ssr/
 build/
 frontend/dist/
 
+# Backups
+backups/
+backend/backups/
+
 # Logs
 logs/
 *.log

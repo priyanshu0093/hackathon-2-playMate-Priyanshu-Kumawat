@@ -1,8 +1,5 @@
-import Review from '../models/Review.js';
-import TurfProfile from '../models/TurfProfile.js';
-import User from '../models/User.js';
-import Booking from '../models/Booking.js';
-import Match from '../models/Match.js';
+import prisma from '../config/prisma.js';
+import { formatReview } from '../utils/formatters.js';
 
 /**
  * POST /api/reviews
@@ -17,7 +14,9 @@ export const createReview = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5.' });
     }
 
-    const reviewer = await User.findById(req.user.id);
+    const reviewer = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
 
     if (type === 'turf') {
       if (!turfId) {
@@ -25,10 +24,12 @@ export const createReview = async (req, res, next) => {
       }
 
       // Check duplicate review
-      const existing = await Review.findOne({
-        reviewer: req.user.id,
-        turf: turfId,
-        ...(bookingId ? { booking: bookingId } : {})
+      const existing = await prisma.review.findFirst({
+        where: {
+          reviewerId: req.user.id,
+          turfId,
+          ...(bookingId ? { bookingId } : {})
+        }
       });
 
       if (existing) {
@@ -38,31 +39,38 @@ export const createReview = async (req, res, next) => {
         });
       }
 
-      const review = await Review.create({
-        type: 'turf',
-        turf: turfId,
-        reviewer: req.user.id,
-        reviewerName: reviewer ? reviewer.name : req.user.name,
-        reviewerAvatar: reviewer ? reviewer.avatar : '',
-        booking: bookingId || null,
-        rating: ratingNum,
-        comment: (comment || '').trim()
+      const review = await prisma.review.create({
+        data: {
+          type: 'turf',
+          turfId,
+          reviewerId: req.user.id,
+          reviewerName: reviewer ? reviewer.name : req.user.name,
+          reviewerAvatar: reviewer ? reviewer.avatar : '',
+          bookingId: bookingId || null,
+          rating: ratingNum,
+          review: (comment || '').trim()
+        }
       });
 
       // Recalculate average rating for Turf
-      const allTurfReviews = await Review.find({ turf: turfId });
+      const allTurfReviews = await prisma.review.findMany({
+        where: { turfId }
+      });
       const avgRating =
         allTurfReviews.reduce((acc, curr) => acc + curr.rating, 0) / allTurfReviews.length;
 
-      await TurfProfile.findByIdAndUpdate(turfId, {
-        rating: Number(avgRating.toFixed(1)),
-        reviewsCount: allTurfReviews.length
+      await prisma.turfProfile.update({
+        where: { id: turfId },
+        data: {
+          rating: Number(avgRating.toFixed(1)),
+          reviewsCount: allTurfReviews.length
+        }
       });
 
       return res.status(201).json({
         success: true,
         message: 'Venue review submitted successfully!',
-        review: review.toJSON()
+        review: formatReview(review)
       });
     } else if (type === 'player') {
       if (!targetUserId) {
@@ -74,10 +82,12 @@ export const createReview = async (req, res, next) => {
       }
 
       // Check duplicate review
-      const existing = await Review.findOne({
-        reviewer: req.user.id,
-        targetUser: targetUserId,
-        ...(matchId ? { match: matchId } : {})
+      const existing = await prisma.review.findFirst({
+        where: {
+          reviewerId: req.user.id,
+          targetUserId,
+          ...(matchId ? { matchId } : {})
+        }
       });
 
       if (existing) {
@@ -87,31 +97,38 @@ export const createReview = async (req, res, next) => {
         });
       }
 
-      const review = await Review.create({
-        type: 'player',
-        targetUser: targetUserId,
-        reviewer: req.user.id,
-        reviewerName: reviewer ? reviewer.name : req.user.name,
-        reviewerAvatar: reviewer ? reviewer.avatar : '',
-        match: matchId || null,
-        rating: ratingNum,
-        comment: (comment || '').trim()
+      const review = await prisma.review.create({
+        data: {
+          type: 'player',
+          targetUserId,
+          reviewerId: req.user.id,
+          reviewerName: reviewer ? reviewer.name : req.user.name,
+          reviewerAvatar: reviewer ? reviewer.avatar : '',
+          matchId: matchId || null,
+          rating: ratingNum,
+          review: (comment || '').trim()
+        }
       });
 
       // Recalculate player rating
-      const allPlayerReviews = await Review.find({ targetUser: targetUserId });
+      const allPlayerReviews = await prisma.review.findMany({
+        where: { targetUserId }
+      });
       const avgRating =
         allPlayerReviews.reduce((acc, curr) => acc + curr.rating, 0) / allPlayerReviews.length;
 
-      await User.findByIdAndUpdate(targetUserId, {
-        rating: Number(avgRating.toFixed(1)),
-        ratingsCount: allPlayerReviews.length
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: {
+          rating: Number(avgRating.toFixed(1)),
+          ratingsCount: allPlayerReviews.length
+        }
       });
 
       return res.status(201).json({
         success: true,
         message: 'Player rating submitted successfully!',
-        review: review.toJSON()
+        review: formatReview(review)
       });
     } else {
       return res.status(400).json({ success: false, error: 'Invalid review type. Must be "turf" or "player".' });
@@ -127,8 +144,11 @@ export const createReview = async (req, res, next) => {
  */
 export const getTurfReviews = async (req, res, next) => {
   try {
-    const reviews = await Review.find({ turf: req.params.turfId }).sort({ createdAt: -1 });
-    res.json(reviews.map((r) => r.toJSON()));
+    const reviews = await prisma.review.findMany({
+      where: { turfId: req.params.turfId },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews.map(formatReview));
   } catch (error) {
     next(error);
   }
@@ -140,10 +160,12 @@ export const getTurfReviews = async (req, res, next) => {
  */
 export const getPlayerReviews = async (req, res, next) => {
   try {
-    const reviews = await Review.find({ targetUser: req.params.playerId }).sort({ createdAt: -1 });
-    res.json(reviews.map((r) => r.toJSON()));
+    const reviews = await prisma.review.findMany({
+      where: { targetUserId: req.params.playerId },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews.map(formatReview));
   } catch (error) {
     next(error);
   }
 };
-

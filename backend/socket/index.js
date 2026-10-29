@@ -1,9 +1,8 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../middleware/auth.js';
-import Match from '../models/Match.js';
-import ChatMessage from '../models/ChatMessage.js';
-import User from '../models/User.js';
+import prisma from '../config/prisma.js';
+import { formatChatMessage } from '../utils/formatters.js';
 
 let ioInstance = null;
 
@@ -61,15 +60,18 @@ export const initSocket = (httpServer, allowedOrigins) => {
       }
 
       try {
-        const match = await Match.findById(matchId);
+        const match = await prisma.match.findUnique({
+          where: { id: matchId }
+        });
         if (!match) {
           if (callback) callback({ error: 'Match not found.' });
           return;
         }
 
-        const isHost = match.host.toString() === socket.user.id;
-        const isParticipant = match.participants.some(
-          (p) => p.user.toString() === socket.user.id
+        const participants = Array.isArray(match.participants) ? match.participants : [];
+        const isHost = match.hostId === socket.user.id;
+        const isParticipant = participants.some(
+          (p) => p.user === socket.user.id || String(p.user) === String(socket.user.id)
         );
 
         if (!isHost && !isParticipant) {
@@ -97,15 +99,18 @@ export const initSocket = (httpServer, allowedOrigins) => {
       }
 
       try {
-        const match = await Match.findById(matchId);
+        const match = await prisma.match.findUnique({
+          where: { id: matchId }
+        });
         if (!match) {
           if (callback) callback({ error: 'Match not found.' });
           return;
         }
 
-        const isHost = match.host.toString() === socket.user.id;
-        const isParticipant = match.participants.some(
-          (p) => p.user.toString() === socket.user.id
+        const participants = Array.isArray(match.participants) ? match.participants : [];
+        const isHost = match.hostId === socket.user.id;
+        const isParticipant = participants.some(
+          (p) => p.user === socket.user.id || String(p.user) === String(socket.user.id)
         );
 
         if (!isHost && !isParticipant) {
@@ -113,24 +118,29 @@ export const initSocket = (httpServer, allowedOrigins) => {
           return;
         }
 
-        const user = await User.findById(socket.user.id);
-        const chatMsg = await ChatMessage.create({
-          match: match._id,
-          sender: user._id,
-          senderName: user.name,
-          senderAvatar: user.avatar,
-          text: text.trim()
+        const user = await prisma.user.findUnique({
+          where: { id: socket.user.id }
         });
 
-        const json = chatMsg.toJSON();
+        const chatMsg = await prisma.chatMessage.create({
+          data: {
+            matchId: match.id,
+            senderId: user ? user.id : socket.user.id,
+            senderName: user ? user.name : socket.user.name,
+            senderAvatar: user ? user.avatar : '',
+            text: text.trim()
+          }
+        });
+
+        const formatted = formatChatMessage(chatMsg);
 
         // Broadcast to everyone in the room
         io.to(`match_${matchId}`).emit('new_chat_message', {
           matchId,
-          message: json
+          message: formatted
         });
 
-        if (callback) callback({ success: true, message: json });
+        if (callback) callback({ success: true, message: formatted });
       } catch (err) {
         if (callback) callback({ error: err.message });
       }
@@ -155,4 +165,3 @@ export const emitNotification = (userId, notification) => {
     ioInstance.to(`user_${userId.toString()}`).emit('new_notification', notification);
   }
 };
-

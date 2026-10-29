@@ -1,10 +1,8 @@
 process.env.TEST_MODE = 'true';
 process.env.NODE_ENV = 'test';
 import http from 'http';
-import mongoose from 'mongoose';
+import prisma from './config/prisma.js';
 import app from './server.js';
-import User from './models/User.js';
-import TurfProfile from './models/TurfProfile.js';
 
 // We'll run a full integration test on port 5098
 const PORT = 5098;
@@ -71,7 +69,7 @@ const runTests = async () => {
 
   try {
     // Clean up test users
-    await User.deleteMany({ email: { $in: ['testplayer@playmate.test', 'testowner@playmate.test'] } });
+    await prisma.user.deleteMany({ where: { email: { in: ['testplayer@playmate.test', 'testowner@playmate.test'] } } });
 
     // 1. Validation: Missing fields
     const res1 = await request('/api/auth/register', {
@@ -233,7 +231,7 @@ const runTests = async () => {
         role: 'turf_owner' // Attempting to escalate role
       }
     });
-    const playerCheck = await User.findOne({ email: 'testplayer@playmate.test' });
+    const playerCheck = await prisma.user.findUnique({ where: { email: 'testplayer@playmate.test' } });
     assert(res15.status === 200 && playerCheck.role === 'player', 'User cannot escalate role via profile update (role remains player)');
 
     // 16. Logout: Clears cookie and invalidates session
@@ -264,7 +262,7 @@ const runTests = async () => {
     console.error('Test execution error:', err);
   } finally {
     testServer.close();
-    await mongoose.disconnect();
+    await prisma.$disconnect();
     process.exit(failed > 0 ? 1 : 0);
   }
 };

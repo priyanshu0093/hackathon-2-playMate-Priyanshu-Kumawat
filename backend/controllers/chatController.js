@@ -1,6 +1,5 @@
-import ChatMessage from '../models/ChatMessage.js';
-import Match from '../models/Match.js';
-import User from '../models/User.js';
+import prisma from '../config/prisma.js';
+import { formatChatMessage } from '../utils/formatters.js';
 
 /**
  * GET /api/chats
@@ -10,17 +9,24 @@ export const getMatchChats = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // Find matches user is participating in or hosting
-    const userMatches = await Match.find({
-      $or: [{ host: userId }, { 'participants.user': userId }]
-    }).sort({ updatedAt: -1 });
+    const allMatches = await prisma.match.findMany({
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const userMatches = allMatches.filter((m) => {
+      if (m.hostId === userId) return true;
+      const participants = Array.isArray(m.participants) ? m.participants : [];
+      return participants.some((p) => p.user === userId || String(p.user) === String(userId));
+    });
 
     const chatList = [];
 
     for (const match of userMatches) {
-      const messages = await ChatMessage.find({ match: match._id })
-        .sort({ createdAt: 1 })
-        .limit(50);
+      const messages = await prisma.chatMessage.findMany({
+        where: { matchId: match.id },
+        orderBy: { createdAt: 'asc' },
+        take: 50
+      });
 
       const sportEmoji =
         match.sport === 'Football'
@@ -31,16 +37,18 @@ export const getMatchChats = async (req, res, next) => {
           ? '🏸'
           : '🏆';
 
+      const participants = Array.isArray(match.participants) ? match.participants : [];
+
       chatList.push({
-        id: `chat_${match._id}`,
-        matchId: match._id.toString(),
+        id: `chat_${match.id}`,
+        matchId: match.id,
         title: `${match.title} ${sportEmoji}`,
-        subtitle: `${match.participants.length} players active`,
+        subtitle: `${participants.length} players active`,
         avatar: match.coverImage || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=200&q=80',
         messages: messages.map((m) => {
-          const json = m.toJSON();
-          json.isMe = m.sender.toString() === userId;
-          return json;
+          const formatted = formatChatMessage(m);
+          formatted.isMe = m.senderId === userId;
+          return formatted;
         })
       });
     }
@@ -60,13 +68,16 @@ export const getMatchMessages = async (req, res, next) => {
     const { matchId } = req.params;
     const userId = req.user.id;
 
-    const match = await Match.findById(matchId);
+    const match = await prisma.match.findUnique({
+      where: { id: matchId }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    const isHost = match.host.toString() === userId;
-    const isParticipant = match.participants.some((p) => p.user.toString() === userId);
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    const isHost = match.hostId === userId;
+    const isParticipant = participants.some((p) => p.user === userId || String(p.user) === String(userId));
 
     if (!isHost && !isParticipant) {
       return res.status(403).json({
@@ -75,13 +86,16 @@ export const getMatchMessages = async (req, res, next) => {
       });
     }
 
-    const messages = await ChatMessage.find({ match: matchId }).sort({ createdAt: 1 });
+    const messages = await prisma.chatMessage.findMany({
+      where: { matchId },
+      orderBy: { createdAt: 'asc' }
+    });
 
     res.json(
       messages.map((m) => {
-        const json = m.toJSON();
-        json.isMe = m.sender.toString() === userId;
-        return json;
+        const formatted = formatChatMessage(m);
+        formatted.isMe = m.senderId === userId;
+        return formatted;
       })
     );
   } catch (error) {
@@ -104,13 +118,16 @@ export const postMatchMessage = async (req, res, next) => {
     }
 
     const userId = req.user.id;
-    const match = await Match.findById(matchId);
+    const match = await prisma.match.findUnique({
+      where: { id: matchId }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    const isHost = match.host.toString() === userId;
-    const isParticipant = match.participants.some((p) => p.user.toString() === userId);
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    const isHost = match.hostId === userId;
+    const isParticipant = participants.some((p) => p.user === userId || String(p.user) === String(userId));
 
     if (!isHost && !isParticipant) {
       return res.status(403).json({
@@ -119,22 +136,25 @@ export const postMatchMessage = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(userId);
-
-    const chatMsg = await ChatMessage.create({
-      match: match._id,
-      sender: user._id,
-      senderName: user.name,
-      senderAvatar: user.avatar,
-      text: msgText
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
     });
 
-    const json = chatMsg.toJSON();
-    json.isMe = true;
+    const chatMsg = await prisma.chatMessage.create({
+      data: {
+        matchId: match.id,
+        senderId: user ? user.id : userId,
+        senderName: user ? user.name : req.user.name,
+        senderAvatar: user ? user.avatar : '',
+        text: msgText
+      }
+    });
 
-    res.status(201).json(json);
+    const formatted = formatChatMessage(chatMsg);
+    formatted.isMe = true;
+
+    res.status(201).json(formatted);
   } catch (error) {
     next(error);
   }
 };
-

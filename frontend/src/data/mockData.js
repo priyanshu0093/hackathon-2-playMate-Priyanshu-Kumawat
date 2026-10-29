@@ -313,6 +313,114 @@ export const INITIAL_MATCHES = [
     roster: [
       { id: 'usr_14', name: 'Ananya Deshmukh (Host)', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80', role: 'Player', status: 'Host' }
     ]
+  },
+  {
+    id: 'match_indore_1',
+    title: 'Indore Super League 7v7 Football',
+    sport: 'Football',
+    coverImage: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+    host: {
+      id: 'usr_ind_1',
+      name: 'Kabir Verma',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      rating: 4.8,
+      verified: true
+    },
+    date: 'Tomorrow, 29 Oct',
+    time: '7:30 PM - 9:00 PM',
+    duration: '1.5 hrs',
+    venue: 'Holkar Sports Arena & Football Turf, Vijay Nagar',
+    venueId: 'ground_indore_1',
+    distance: '2.4 km away',
+    city: 'Indore',
+    playersJoined: 10,
+    totalSpots: 14,
+    pricePerPerson: 185,
+    totalCost: 2600,
+    skillLevel: 'Intermediate',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Competitive 7v7 under floodlights in Vijay Nagar. Warm-up 15 mins prior, bibs & size 5 match balls included.',
+    rules: [
+      'Turf cleats only (no metal studs)',
+      'Bibs and refreshments provided',
+      'Arrive 15 mins early'
+    ],
+    roster: [
+      { id: 'usr_ind_1', name: 'Kabir Verma (Host)', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Midfielder', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_indore_2',
+    title: 'Indore Holkar Box Cricket Cup',
+    sport: 'Cricket',
+    coverImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
+    host: {
+      id: 'usr_ind_2',
+      name: 'Rahul Malviya',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+      rating: 4.9,
+      verified: true
+    },
+    date: 'Wed, 30 Oct',
+    time: '6:30 AM - 8:30 AM',
+    duration: '2.0 hrs',
+    venue: 'Malwa Box Cricket Arena, New Palasia',
+    venueId: 'ground_indore_2',
+    distance: '3.1 km away',
+    city: 'Indore',
+    playersJoined: 11,
+    totalSpots: 16,
+    pricePerPerson: 150,
+    totalCost: 2400,
+    skillLevel: 'All Levels',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Early morning box cricket thrill with tennis hard balls. Round-robin matches with trophy for MVP.',
+    rules: [
+      'Net boundary rules apply',
+      'Bats provided at venue',
+      'Fair play strictly observed'
+    ],
+    roster: [
+      { id: 'usr_ind_2', name: 'Rahul Malviya (Host)', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80', role: 'All-Rounder', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_indore_3',
+    title: 'Bhawarkua Badminton Doubles Rally',
+    sport: 'Badminton',
+    coverImage: 'https://images.unsplash.com/photo-1613918431703-aa50393693f1?auto=format&fit=crop&w=800&q=80',
+    host: {
+      id: 'usr_ind_3',
+      name: 'Priya Sharma',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+      rating: 4.8,
+      verified: true
+    },
+    date: 'Thu, 31 Oct',
+    time: '7:00 PM - 8:30 PM',
+    duration: '1.5 hrs',
+    venue: 'Shuttle Point Indoor Badminton Club, Bhawarkua',
+    venueId: 'ground_indore_3',
+    distance: '4.0 km away',
+    city: 'Indore',
+    playersJoined: 3,
+    totalSpots: 4,
+    pricePerPerson: 150,
+    totalCost: 600,
+    skillLevel: 'Intermediate',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Friendly competitive doubles on premium wooden courts. Mavis 350 nylon shuttles provided.',
+    rules: [
+      'Non-marking shoes only',
+      'Best of 3 games format',
+      'Filtered drinking water provided'
+    ],
+    roster: [
+      { id: 'usr_ind_3', name: 'Priya Sharma (Host)', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80', role: 'Player', status: 'Host' }
+    ]
   }
 ];
 
@@ -572,6 +680,110 @@ export const INITIAL_GROUNDS = [
     owner: {
       name: 'Alok Khemka',
       phone: '+91 98860 12345',
+      verified: true
+    },
+    reviews: []
+  },
+  {
+    id: 'ground_indore_1',
+    name: 'Holkar Sports Arena & Football Turf',
+    tagline: 'Premier FIFA-Approved 7v7 Astro Turf under Floodlights',
+    category: 'Multi-sport Turf',
+    supportedSports: ['Football', 'Cricket'],
+    location: 'Scheme No. 54, Vijay Nagar',
+    city: 'Indore',
+    distance: '2.4 km',
+    coordinates: { lat: 22.7533, lng: 75.8937 },
+    rating: 4.9,
+    reviewsCount: 88,
+    hourlyPrice: 1300,
+    heroImage: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80'
+    ],
+    amenities: [
+      { name: 'FIFA Grade Turf', icon: 'Award' },
+      { name: 'Floodlights', icon: 'Sun' },
+      { name: 'Changing Rooms', icon: 'Home' },
+      { name: 'Free Parking', icon: 'Truck' }
+    ],
+    slots: [
+      { id: 's1', time: '06:00 AM - 07:30 AM', status: 'Available', price: 1100 },
+      { id: 's2', time: '06:00 PM - 07:30 PM', status: 'Available', price: 1300 },
+      { id: 's3', time: '07:30 PM - 09:00 PM', status: 'Fast Filling', price: 1400 }
+    ],
+    owner: {
+      name: 'Manish Patidar',
+      phone: '+91 98930 22110',
+      verified: true
+    },
+    reviews: []
+  },
+  {
+    id: 'ground_indore_2',
+    name: 'Malwa Box Cricket Arena',
+    tagline: 'High-Impact Box Cricket Pitch with Automatic Bowling Machine',
+    category: 'Box Cricket',
+    supportedSports: ['Cricket'],
+    location: 'AB Road, Near Industry House, New Palasia',
+    city: 'Indore',
+    distance: '3.1 km',
+    coordinates: { lat: 22.7244, lng: 75.8839 },
+    rating: 4.8,
+    reviewsCount: 112,
+    hourlyPrice: 1100,
+    heroImage: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=900&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=900&q=80'
+    ],
+    amenities: [
+      { name: 'Bowling Machine', icon: 'Zap' },
+      { name: 'Overhead Netting', icon: 'Shield' },
+      { name: 'Bats Provided', icon: 'Package' }
+    ],
+    slots: [
+      { id: 's1', time: '06:30 AM - 08:30 AM', status: 'Available', price: 1000 },
+      { id: 's2', time: '05:00 PM - 07:00 PM', status: 'Available', price: 1100 }
+    ],
+    owner: {
+      name: 'Virendra Sharma',
+      phone: '+91 98260 44556',
+      verified: true
+    },
+    reviews: []
+  },
+  {
+    id: 'ground_indore_3',
+    name: 'Shuttle Point Indoor Badminton Club',
+    tagline: 'Air-conditioned Wooden Flooring Badminton Courts',
+    category: 'Badminton Courts',
+    supportedSports: ['Badminton'],
+    location: 'Bhawarkua Main Road, Transport Nagar',
+    city: 'Indore',
+    distance: '4.0 km',
+    coordinates: { lat: 22.6916, lng: 75.8667 },
+    rating: 4.7,
+    reviewsCount: 64,
+    hourlyPrice: 400,
+    heroImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1613918431703-aa50393693f1?auto=format&fit=crop&w=900&q=80'
+    ],
+    amenities: [
+      { name: 'Wooden Cushioned Courts', icon: 'Award' },
+      { name: 'High Bay LED', icon: 'Sun' },
+      { name: 'Racquet Stringing', icon: 'Wrench' }
+    ],
+    slots: [
+      { id: 's1', time: '06:00 AM - 07:00 AM', status: 'Available', price: 350 },
+      { id: 's2', time: '07:00 PM - 08:30 PM', status: 'Available', price: 400 }
+    ],
+    owner: {
+      name: 'Sanjay Chaurasia',
+      phone: '+91 97550 77889',
       verified: true
     },
     reviews: []

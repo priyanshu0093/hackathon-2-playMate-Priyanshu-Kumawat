@@ -12,6 +12,7 @@ export const CITY_OPTIONS = [
   'Chennai',
   'Kolkata',
   'Ahmedabad',
+  'Indore',
   'Goa',
   'Chandigarh',
   'Jaipur',
@@ -36,6 +37,7 @@ export const normalizeCity = (city) => {
   if (clean.includes('chennai') || clean.includes('madras')) return 'chennai';
   if (clean.includes('kolkata') || clean.includes('calcutta')) return 'kolkata';
   if (clean.includes('ahmedabad')) return 'ahmedabad';
+  if (clean.includes('indore')) return 'indore';
   if (clean.includes('goa')) return 'goa';
   if (clean.includes('chandigarh')) return 'chandigarh';
   if (clean.includes('jaipur')) return 'jaipur';

@@ -43,13 +43,23 @@ export const HomeDashboard = () => {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Personalized Welcome Banner */}
+      {/* Personalized Welcome Banner with Stadium Backdrop */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative bg-gradient-to-r from-[#2F80ED] via-[#1F6AD0] to-[#1554A8] rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-[#2F80ED]/20 overflow-hidden"
+        className="relative rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-[#2F80ED]/20 overflow-hidden bg-slate-900"
       >
+        {/* Background Stadium Photo with Cinematic Gradient Overlay */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/hero-stadium.jpg"
+            alt="Stadium Outfield"
+            className="w-full h-full object-cover object-[50%_30%] filter brightness-[0.7] contrast-[1.1]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-[#1F6AD0]/80 to-slate-900/60" />
+        </div>
+
         {/* Glow circles */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-2xl -mr-20 -mt-20 pointer-events-none" />
 

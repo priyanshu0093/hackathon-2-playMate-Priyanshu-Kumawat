@@ -1,5 +1,5 @@
-import User from '../models/User.js';
-import Match from '../models/Match.js';
+import prisma from '../config/prisma.js';
+import { formatUser, formatMatch } from '../utils/formatters.js';
 
 /**
  * GET /api/users/players
@@ -9,39 +9,50 @@ export const getPlayers = async (req, res, next) => {
   try {
     const { city, sport, skillLevel, position, q } = req.query;
 
-    const query = { role: 'player' };
+    const where = { role: 'player' };
 
-    if (city) {
-      query.city = new RegExp(`^${city.trim()}$`, 'i');
-    }
-
-    if (sport) {
-      query.preferredSports = { $in: [new RegExp(`^${sport.trim()}$`, 'i')] };
+    if (city && city !== 'all') {
+      where.city = { equals: city.trim(), mode: 'insensitive' };
     }
 
     if (skillLevel && skillLevel !== 'All Levels') {
-      query.skillLevel = skillLevel;
+      where.skillLevel = skillLevel;
+    }
+
+    let players = await prisma.user.findMany({
+      where,
+      orderBy: [{ rating: 'desc' }, { matchesPlayed: 'desc' }],
+      take: 100
+    });
+
+    if (sport && sport !== 'all') {
+      const sportLower = sport.trim().toLowerCase();
+      players = players.filter((p) => {
+        const sports = Array.isArray(p.preferredSports) ? p.preferredSports : [];
+        return sports.some((s) => String(s).toLowerCase().includes(sportLower));
+      });
     }
 
     if (position) {
-      query.$or = [
-        { playingRole: new RegExp(position.trim(), 'i') },
-        { preferredPositions: { $in: [new RegExp(position.trim(), 'i')] } }
-      ];
+      const posLower = position.trim().toLowerCase();
+      players = players.filter((p) => {
+        const matchesRole = p.playingRole && p.playingRole.toLowerCase().includes(posLower);
+        const positions = Array.isArray(p.preferredPositions) ? p.preferredPositions : [];
+        const matchesPos = positions.some((pos) => String(pos).toLowerCase().includes(posLower));
+        return matchesRole || matchesPos;
+      });
     }
 
     if (q) {
-      const regex = new RegExp(q.trim(), 'i');
-      query.$or = query.$or || [];
-      query.$or.push({ name: regex }, { bio: regex });
+      const qLower = q.trim().toLowerCase();
+      players = players.filter((p) => {
+        const nameMatch = p.name && p.name.toLowerCase().includes(qLower);
+        const bioMatch = p.bio && p.bio.toLowerCase().includes(qLower);
+        return nameMatch || bioMatch;
+      });
     }
 
-    const players = await User.find(query)
-      .select('-password')
-      .sort({ rating: -1, matchesPlayed: -1 })
-      .limit(50);
-
-    res.json(players.map((p) => p.toSafeObject()));
+    res.json(players.slice(0, 50).map(formatUser));
   } catch (error) {
     next(error);
   }
@@ -53,23 +64,27 @@ export const getPlayers = async (req, res, next) => {
  */
 export const getUserById = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id }
+    });
     if (!user) {
       return res.status(404).json({ success: false, error: 'User profile not found.' });
     }
 
     // Fetch user's match history
-    const userMatches = await Match.find({
-      $or: [
-        { host: user._id },
-        { 'participants.user': user._id }
-      ]
-    })
-      .sort({ date: -1 })
-      .limit(10);
+    const allMatches = await prisma.match.findMany({
+      orderBy: { date: 'desc' },
+      take: 100
+    });
 
-    const safeUser = user.toSafeObject();
-    safeUser.recentMatches = userMatches.map((m) => m.toJSON());
+    const userMatches = allMatches.filter((m) => {
+      if (m.hostId === user.id) return true;
+      const participants = Array.isArray(m.participants) ? m.participants : [];
+      return participants.some((p) => p.user === user.id || String(p.user) === String(user.id));
+    }).slice(0, 10);
+
+    const safeUser = formatUser(user);
+    safeUser.recentMatches = userMatches.map(formatMatch);
 
     res.json(safeUser);
   } catch (error) {
@@ -83,23 +98,27 @@ export const getUserById = async (req, res, next) => {
  */
 export const getMyMatches = async (req, res, next) => {
   try {
-    const matches = await Match.find({
-      $or: [
-        { host: req.user.id },
-        { 'participants.user': req.user.id }
-      ]
-    }).sort({ date: 1, time: 1 });
+    const userId = req.user.id;
+    const allMatches = await prisma.match.findMany({
+      orderBy: [{ date: 'asc' }, { time: 'asc' }]
+    });
+
+    const userMatches = allMatches.filter((m) => {
+      if (m.hostId === userId) return true;
+      const participants = Array.isArray(m.participants) ? m.participants : [];
+      return participants.some((p) => p.user === userId || String(p.user) === String(userId));
+    });
 
     const today = new Date().toISOString().split('T')[0];
     const upcoming = [];
     const completed = [];
 
-    for (const m of matches) {
-      const json = m.toJSON();
+    for (const m of userMatches) {
+      const formatted = formatMatch(m);
       if (m.status === 'Completed' || m.date < today) {
-        completed.push(json);
+        completed.push(formatted);
       } else {
-        upcoming.push(json);
+        upcoming.push(formatted);
       }
     }
 
@@ -107,7 +126,7 @@ export const getMyMatches = async (req, res, next) => {
       success: true,
       upcoming,
       completed,
-      total: matches.length
+      total: userMatches.length
     });
   } catch (error) {
     next(error);
@@ -123,7 +142,6 @@ export const uploadFile = (req, res) => {
     return res.status(400).json({ success: false, error: 'No image file uploaded.' });
   }
 
-  // Construct URL accessible by frontend
   const fileUrl = `/uploads/${req.file.filename}`;
 
   res.status(201).json({
@@ -134,4 +152,3 @@ export const uploadFile = (req, res) => {
     size: req.file.size
   });
 };
-

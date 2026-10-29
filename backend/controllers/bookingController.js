@@ -1,7 +1,5 @@
-import Booking from '../models/Booking.js';
-import TurfProfile from '../models/TurfProfile.js';
-import User from '../models/User.js';
-import Notification from '../models/Notification.js';
+import prisma from '../config/prisma.js';
+import { formatBooking } from '../utils/formatters.js';
 
 /**
  * GET /api/bookings
@@ -12,28 +10,32 @@ export const getBookings = async (req, res, next) => {
     const { city, status } = req.query;
     const userRole = req.user.role === 'owner' ? 'turf_owner' : req.user.role;
 
-    let query = {};
+    const where = {};
 
     if (userRole === 'turf_owner') {
-      // Find all venues owned by this turf owner
-      const myVenues = await TurfProfile.find({ owner: req.user.id });
-      const venueIds = myVenues.map((v) => v._id);
-      query.turf = { $in: venueIds };
+      const myVenues = await prisma.turfProfile.findMany({
+        where: { ownerId: req.user.id }
+      });
+      const venueIds = myVenues.map((v) => v.id);
+      where.turfId = { in: venueIds };
     } else {
-      query.user = req.user.id;
+      where.userId = req.user.id;
     }
 
     if (city && city !== 'all') {
-      query.turfCity = new RegExp(`^${city.trim()}$`, 'i');
+      where.turfCity = { equals: city.trim(), mode: 'insensitive' };
     }
 
     if (status && status !== 'all') {
-      query.status = status;
+      where.status = status;
     }
 
-    const bookings = await Booking.find(query).sort({ date: -1, createdAt: -1 });
+    const bookings = await prisma.booking.findMany({
+      where,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
+    });
 
-    res.json(bookings.map((b) => b.toJSON()));
+    res.json(bookings.map(formatBooking));
   } catch (error) {
     next(error);
   }
@@ -45,20 +47,21 @@ export const getBookings = async (req, res, next) => {
  */
 export const getBookingById = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
     if (!booking) {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    // Permission check: only booking creator or turf owner can view
-    const isCreator = booking.user.toString() === req.user.id;
-    const isOwner = booking.owner.toString() === req.user.id;
+    const isCreator = booking.userId === req.user.id;
+    const isOwner = booking.ownerId === req.user.id;
 
     if (!isCreator && !isOwner) {
       return res.status(403).json({ success: false, error: 'Access denied.' });
     }
 
-    res.json(booking.toJSON());
+    res.json(formatBooking(booking));
   } catch (error) {
     next(error);
   }
@@ -91,13 +94,16 @@ export const createBooking = async (req, res, next) => {
       });
     }
 
-    const turf = await TurfProfile.findById(targetTurfId);
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: targetTurfId }
+    });
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Turf venue not found.' });
     }
 
     // Check if slot is blocked by owner
-    const isBlocked = (turf.blockedSlots || []).some(
+    const blockedSlots = Array.isArray(turf.blockedSlots) ? turf.blockedSlots : [];
+    const isBlocked = blockedSlots.some(
       (b) => b.date === date && b.slotId === slotId
     );
     if (isBlocked) {
@@ -107,12 +113,14 @@ export const createBooking = async (req, res, next) => {
       });
     }
 
-    // Atomic race-condition prevention: Check if already booked
-    const existing = await Booking.findOne({
-      turf: targetTurfId,
-      date,
-      slotId,
-      status: { $in: ['Confirmed', 'Pending'] }
+    // Double-booking check
+    const existing = await prisma.booking.findFirst({
+      where: {
+        turfId: targetTurfId,
+        date,
+        slotId,
+        status: { in: ['Confirmed', 'Pending'] }
+      }
     });
 
     if (existing) {
@@ -122,56 +130,67 @@ export const createBooking = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
     const bookingAmount = Number(amount || totalAmount || turf.hourlyRate || 1500);
 
-    const booking = await Booking.create({
-      turf: turf._id,
-      turfName: turf.businessName,
-      turfCity: turf.city,
-      turfLocation: turf.address,
-      owner: turf.owner,
-      user: req.user.id,
-      userName: user ? user.name : req.user.name,
-      userEmail: user ? user.email : req.user.email,
-      userPhone: user ? user.phone : '',
-      date,
-      timeSlot: timeSlot || '06:00 PM - 07:30 PM',
-      slotId,
-      sport: sport || turf.sports?.[0] || 'Football',
-      court: court || 'Main Arena Court',
-      amount: bookingAmount,
-      status: 'Confirmed', // Immediate confirmation with owner notification
-      paymentStatus: 'Paid',
-      paymentMode: paymentMode || 'demo'
+    const bookingRef = 'BK-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    const booking = await prisma.booking.create({
+      data: {
+        bookingRef,
+        turfId: turf.id,
+        turfName: turf.businessName,
+        turfCity: turf.city,
+        turfLocation: turf.address,
+        ownerId: turf.ownerId,
+        userId: req.user.id,
+        userName: user ? user.name : req.user.name,
+        userEmail: user ? user.email : req.user.email,
+        userPhone: user ? user.phone : '',
+        date,
+        timeSlot: timeSlot || '06:00 PM - 07:30 PM',
+        slotId,
+        sport: sport || (Array.isArray(turf.sports) ? turf.sports[0] : 'Football'),
+        court: court || 'Main Arena Court',
+        amount: bookingAmount,
+        status: 'Confirmed',
+        paymentStatus: 'Paid',
+        paymentMethod: paymentMode || 'demo'
+      }
     });
 
     // Notify Turf Owner
-    await Notification.create({
-      recipient: turf.owner,
-      sender: req.user.id,
-      senderName: user ? user.name : req.user.name,
-      type: 'booking_confirmed',
-      title: 'New Reservation Booked! 🏟️',
-      message: `${user ? user.name : 'Player'} reserved ${turf.businessName} on ${date} (${timeSlot}).`,
-      actionLink: '/owner',
-      data: { bookingId: booking._id }
+    await prisma.notification.create({
+      data: {
+        recipientId: turf.ownerId,
+        senderId: req.user.id,
+        senderName: user ? user.name : req.user.name,
+        type: 'booking_confirmed',
+        title: 'New Reservation Booked! 🏟️',
+        message: `${user ? user.name : 'Player'} reserved ${turf.businessName} on ${date} (${timeSlot}).`,
+        actionLink: '/owner',
+        data: { bookingId: booking.id }
+      }
     });
 
     // Notify Player
-    await Notification.create({
-      recipient: req.user.id,
-      type: 'booking_confirmed',
-      title: 'Ground Booking Confirmed 🎉',
-      message: `Your slot at ${turf.businessName} on ${date} (${timeSlot}) is confirmed.`,
-      actionLink: '/player/my-activity',
-      data: { bookingId: booking._id }
+    await prisma.notification.create({
+      data: {
+        recipientId: req.user.id,
+        type: 'booking_confirmed',
+        title: 'Ground Booking Confirmed 🎉',
+        message: `Your slot at ${turf.businessName} on ${date} (${timeSlot}) is confirmed.`,
+        actionLink: '/player/my-activity',
+        data: { bookingId: booking.id }
+      }
     });
 
     res.status(201).json({
       success: true,
       message: 'Booking confirmed successfully!',
-      booking: booking.toJSON()
+      booking: formatBooking(booking)
     });
   } catch (error) {
     next(error);
@@ -184,13 +203,15 @@ export const createBooking = async (req, res, next) => {
  */
 export const cancelBooking = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
     if (!booking) {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    const isCreator = booking.user.toString() === req.user.id;
-    const isOwner = booking.owner.toString() === req.user.id;
+    const isCreator = booking.userId === req.user.id;
+    const isOwner = booking.ownerId === req.user.id;
 
     if (!isCreator && !isOwner) {
       return res.status(403).json({ success: false, error: 'Unauthorized to cancel this booking.' });
@@ -200,29 +221,33 @@ export const cancelBooking = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Booking is already cancelled.' });
     }
 
-    booking.status = 'Cancelled';
-    booking.cancelledAt = new Date();
-    booking.cancellationReason = req.body.reason || (isOwner ? 'Cancelled by Venue Owner' : 'Cancelled by Player');
-    booking.paymentStatus = 'Refunded';
+    const updated = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'Cancelled',
+        cancelledAt: new Date(),
+        cancellationReason: req.body.reason || (isOwner ? 'Cancelled by Venue Owner' : 'Cancelled by Player'),
+        paymentStatus: 'Refunded'
+      }
+    });
 
-    await booking.save();
-
-    // Send notification to the opposite party
-    const notifyTarget = isCreator ? booking.owner : booking.user;
-    await Notification.create({
-      recipient: notifyTarget,
-      sender: req.user.id,
-      type: 'booking_cancelled',
-      title: 'Booking Cancelled',
-      message: `The booking for ${booking.turfName} on ${booking.date} (${booking.timeSlot}) was cancelled. Slot is now released.`,
-      actionLink: isOwner ? '/owner' : '/player/my-activity',
-      data: { bookingId: booking._id }
+    const notifyTarget = isCreator ? booking.ownerId : booking.userId;
+    await prisma.notification.create({
+      data: {
+        recipientId: notifyTarget,
+        senderId: req.user.id,
+        type: 'booking_cancelled',
+        title: 'Booking Cancelled',
+        message: `The booking for ${booking.turfName} on ${booking.date} (${booking.timeSlot}) was cancelled. Slot is now released.`,
+        actionLink: isOwner ? '/owner' : '/player/my-activity',
+        data: { bookingId: booking.id }
+      }
     });
 
     res.json({
       success: true,
       message: 'Booking cancelled successfully. Slot has been freed.',
-      booking: booking.toJSON()
+      booking: formatBooking(updated)
     });
   } catch (error) {
     next(error);
@@ -248,25 +273,29 @@ export const rescheduleBooking = async (req, res, next) => {
       });
     }
 
-    const booking = await Booking.findById(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
     if (!booking) {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    const isCreator = booking.user.toString() === req.user.id;
-    const isOwner = booking.owner.toString() === req.user.id;
+    const isCreator = booking.userId === req.user.id;
+    const isOwner = booking.ownerId === req.user.id;
 
     if (!isCreator && !isOwner) {
       return res.status(403).json({ success: false, error: 'Unauthorized to reschedule this booking.' });
     }
 
     // Check if target slot is already booked
-    const conflict = await Booking.findOne({
-      _id: { $ne: booking._id },
-      turf: booking.turf,
-      date: targetDate,
-      slotId: targetSlotId,
-      status: { $in: ['Confirmed', 'Pending'] }
+    const conflict = await prisma.booking.findFirst({
+      where: {
+        id: { not: booking.id },
+        turfId: booking.turfId,
+        date: targetDate,
+        slotId: targetSlotId,
+        status: { in: ['Confirmed', 'Pending'] }
+      }
     });
 
     if (conflict) {
@@ -277,8 +306,11 @@ export const rescheduleBooking = async (req, res, next) => {
     }
 
     // Check if blocked by turf owner
-    const turf = await TurfProfile.findById(booking.turf);
-    const isBlocked = (turf?.blockedSlots || []).some(
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: booking.turfId }
+    });
+    const blockedSlots = Array.isArray(turf?.blockedSlots) ? turf.blockedSlots : [];
+    const isBlocked = blockedSlots.some(
       (b) => b.date === targetDate && b.slotId === targetSlotId
     );
     if (isBlocked) {
@@ -288,36 +320,40 @@ export const rescheduleBooking = async (req, res, next) => {
       });
     }
 
-    // Record previous booking info
-    booking.rescheduledFrom = {
+    const rescheduledFrom = {
       date: booking.date,
       slotId: booking.slotId,
       timeSlot: booking.timeSlot
     };
 
-    booking.date = targetDate;
-    booking.slotId = targetSlotId;
-    if (targetTimeSlot) booking.timeSlot = targetTimeSlot;
-    booking.status = 'Confirmed';
+    const updated = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: {
+        rescheduledFrom,
+        date: targetDate,
+        slotId: targetSlotId,
+        ...(targetTimeSlot ? { timeSlot: targetTimeSlot } : {}),
+        status: 'Confirmed'
+      }
+    });
 
-    await booking.save();
-
-    // Send notification
-    const notifyTarget = isCreator ? booking.owner : booking.user;
-    await Notification.create({
-      recipient: notifyTarget,
-      sender: req.user.id,
-      type: 'booking_confirmed',
-      title: 'Reservation Rescheduled 🔄',
-      message: `Reservation at ${booking.turfName} rescheduled to ${targetDate} (${booking.timeSlot}).`,
-      actionLink: isOwner ? '/owner' : '/player/my-activity',
-      data: { bookingId: booking._id }
+    const notifyTarget = isCreator ? booking.ownerId : booking.userId;
+    await prisma.notification.create({
+      data: {
+        recipientId: notifyTarget,
+        senderId: req.user.id,
+        type: 'booking_confirmed',
+        title: 'Reservation Rescheduled 🔄',
+        message: `Reservation at ${booking.turfName} rescheduled to ${targetDate} (${targetTimeSlot || booking.timeSlot}).`,
+        actionLink: isOwner ? '/owner' : '/player/my-activity',
+        data: { bookingId: booking.id }
+      }
     });
 
     res.json({
       success: true,
       message: 'Booking rescheduled successfully!',
-      booking: booking.toJSON()
+      booking: formatBooking(updated)
     });
   } catch (error) {
     next(error);
@@ -330,12 +366,14 @@ export const rescheduleBooking = async (req, res, next) => {
  */
 export const updateBookingStatus = async (req, res, next) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id: req.params.id }
+    });
     if (!booking) {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    if (booking.owner.toString() !== req.user.id) {
+    if (booking.ownerId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the venue owner can update status.' });
     }
 
@@ -347,29 +385,32 @@ export const updateBookingStatus = async (req, res, next) => {
     }
 
     const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    booking.status = normalizedStatus;
 
-    if (normalizedStatus === 'Rejected') {
-      booking.paymentStatus = 'Refunded';
-    }
-
-    await booking.save();
+    const updated = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: {
+        status: normalizedStatus,
+        ...(normalizedStatus === 'Rejected' ? { paymentStatus: 'Refunded' } : {})
+      }
+    });
 
     // Notify player
-    await Notification.create({
-      recipient: booking.user,
-      sender: req.user.id,
-      type: normalizedStatus === 'Confirmed' ? 'booking_confirmed' : 'booking_rejected',
-      title: `Booking ${normalizedStatus}`,
-      message: `Your booking for ${booking.turfName} on ${booking.date} was ${normalizedStatus.toLowerCase()} by the owner.`,
-      actionLink: '/player/my-activity',
-      data: { bookingId: booking._id }
+    await prisma.notification.create({
+      data: {
+        recipientId: booking.userId,
+        senderId: req.user.id,
+        type: normalizedStatus === 'Confirmed' ? 'booking_confirmed' : 'booking_rejected',
+        title: `Booking ${normalizedStatus}`,
+        message: `Your booking for ${booking.turfName} on ${booking.date} was ${normalizedStatus.toLowerCase()} by the owner.`,
+        actionLink: '/player/my-activity',
+        data: { bookingId: booking.id }
+      }
     });
 
     res.json({
       success: true,
       message: `Booking marked as ${normalizedStatus}.`,
-      booking: booking.toJSON()
+      booking: formatBooking(updated)
     });
   } catch (error) {
     next(error);

@@ -1,5 +1,5 @@
-import TurfProfile from '../models/TurfProfile.js';
-import Booking from '../models/Booking.js';
+import prisma from '../config/prisma.js';
+import { formatTurf, formatBooking } from '../utils/formatters.js';
 
 // Standard fallback time slots generator
 const generateDailySlots = (openingHour = '06:00', closingHour = '23:00', price = 1500) => {
@@ -45,32 +45,51 @@ export const getTurfs = async (req, res, next) => {
   try {
     const { city, sport, minPrice, maxPrice, q } = req.query;
 
-    const query = {};
+    const where = {};
 
     if (city && city !== 'all') {
-      query.city = new RegExp(`^${city.trim()}$`, 'i');
-    }
-
-    if (sport && sport !== 'all') {
-      query.sports = { $in: [new RegExp(`^${sport.trim()}$`, 'i')] };
+      where.city = { equals: city.trim(), mode: 'insensitive' };
     }
 
     if (minPrice || maxPrice) {
-      query.hourlyRate = {};
-      if (minPrice) query.hourlyRate.$gte = Number(minPrice);
-      if (maxPrice) query.hourlyRate.$lte = Number(maxPrice);
+      where.hourlyRate = {};
+      if (minPrice) where.hourlyRate.gte = Number(minPrice);
+      if (maxPrice) where.hourlyRate.lte = Number(maxPrice);
+    }
+
+    let profiles = await prisma.turfProfile.findMany({
+      where,
+      include: {
+        owner: {
+          select: {
+            name: true,
+            phone: true,
+            email: true
+          }
+        }
+      },
+      orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }]
+    });
+
+    if (sport && sport !== 'all') {
+      const sportLower = sport.trim().toLowerCase();
+      profiles = profiles.filter((p) => {
+        const sports = Array.isArray(p.sports) ? p.sports : [];
+        return sports.some((s) => String(s).toLowerCase().includes(sportLower));
+      });
     }
 
     if (q) {
-      const regex = new RegExp(q.trim(), 'i');
-      query.$or = [{ businessName: regex }, { address: regex }, { tagline: regex }];
+      const qLower = q.trim().toLowerCase();
+      profiles = profiles.filter((p) => {
+        const nameMatch = p.businessName && p.businessName.toLowerCase().includes(qLower);
+        const addrMatch = p.address && p.address.toLowerCase().includes(qLower);
+        const tagMatch = p.tagline && p.tagline.toLowerCase().includes(qLower);
+        return nameMatch || addrMatch || tagMatch;
+      });
     }
 
-    const profiles = await TurfProfile.find(query)
-      .populate('owner', 'name phone email')
-      .sort({ rating: -1, createdAt: -1 });
-
-    res.json(profiles.map((p) => p.toJSON()));
+    res.json(profiles.map(formatTurf));
   } catch (error) {
     next(error);
   }
@@ -82,19 +101,31 @@ export const getTurfs = async (req, res, next) => {
  */
 export const getTurfById = async (req, res, next) => {
   try {
-    const turf = await TurfProfile.findById(req.params.id).populate('owner', 'name phone email');
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: req.params.id },
+      include: {
+        owner: {
+          select: {
+            name: true,
+            phone: true,
+            email: true
+          }
+        }
+      }
+    });
+
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Turf venue not found.' });
     }
 
-    const json = turf.toJSON();
+    const formatted = formatTurf(turf);
 
     // Default slots if none exist
-    if (!json.slots || !json.slots.length) {
-      json.slots = generateDailySlots(turf.openingHour, turf.closingHour, turf.hourlyRate);
+    if (!formatted.slots || !formatted.slots.length) {
+      formatted.slots = generateDailySlots(turf.openingHour, turf.closingHour, turf.hourlyRate);
     }
 
-    res.json(json);
+    res.json(formatted);
   } catch (error) {
     next(error);
   }
@@ -111,27 +142,31 @@ export const getTurfAvailability = async (req, res, next) => {
 
     const targetDate = date || new Date().toISOString().split('T')[0];
 
-    const turf = await TurfProfile.findById(id);
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id }
+    });
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Turf venue not found.' });
     }
 
-    const baseSlots = turf.slots?.length
+    const baseSlots = Array.isArray(turf.slots) && turf.slots.length
       ? turf.slots
       : generateDailySlots(turf.openingHour, turf.closingHour, turf.hourlyRate);
 
     // Fetch existing confirmed/pending bookings for this venue on this date
-    const bookings = await Booking.find({
-      turf: id,
-      date: targetDate,
-      status: { $in: ['Confirmed', 'Pending'] }
+    const bookings = await prisma.booking.findMany({
+      where: {
+        turfId: id,
+        date: targetDate,
+        status: { in: ['Confirmed', 'Pending'] }
+      }
     });
 
     const bookedSlotIds = new Set(bookings.map((b) => b.slotId));
 
     // Check blocked slots by owner
     const blockedSlotIds = new Set(
-      (turf.blockedSlots || [])
+      (Array.isArray(turf.blockedSlots) ? turf.blockedSlots : [])
         .filter((b) => b.date === targetDate)
         .map((b) => b.slotId)
     );
@@ -201,34 +236,36 @@ export const createTurf = async (req, res, next) => {
 
     const defaultSlots = generateDailySlots(openH, closeH, price);
 
-    const newTurf = await TurfProfile.create({
-      owner: req.user.id,
-      businessName: bName,
-      tagline: tagline || 'Premier Sports Venue',
-      category: category || 'Multi-sport Turf',
-      sports: Array.isArray(sports || supportedSports) ? (sports || supportedSports) : ['Football'],
-      hourlyRate: price,
-      city: (city || req.user.city || 'Bangalore').trim(),
-      address: (address || location || 'Main Road').trim(),
-      amenities: Array.isArray(amenities) ? amenities : ['High-Power Floodlights', 'Free Parking'],
-      images: Array.isArray(images || gallery) && (images || gallery).length ? (images || gallery) : [
-        'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80'
-      ],
-      openingHour: openH,
-      closingHour: closeH,
-      slots: defaultSlots,
-      contactDetails: {
-        phone: phone || req.user.phone || '',
-        email: email || req.user.email || '',
-        website: website || ''
-      },
-      verificationStatus: 'verified'
+    const newTurf = await prisma.turfProfile.create({
+      data: {
+        ownerId: req.user.id,
+        businessName: bName,
+        tagline: tagline || 'Premier Sports Venue',
+        category: category || 'Multi-sport Turf',
+        sports: Array.isArray(sports || supportedSports) ? (sports || supportedSports) : ['Football'],
+        hourlyRate: price,
+        city: (city || req.user.city || 'Bangalore').trim(),
+        address: (address || location || 'Main Road').trim(),
+        amenities: Array.isArray(amenities) ? amenities : ['High-Power Floodlights', 'Free Parking'],
+        images: Array.isArray(images || gallery) && (images || gallery).length ? (images || gallery) : [
+          'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80'
+        ],
+        openingHour: openH,
+        closingHour: closeH,
+        slots: defaultSlots,
+        contactDetails: {
+          phone: phone || req.user.phone || '',
+          email: email || req.user.email || '',
+          website: website || ''
+        },
+        verificationStatus: 'verified'
+      }
     });
 
     res.status(201).json({
       success: true,
       message: 'Venue listing created successfully.',
-      turf: newTurf.toJSON()
+      turf: formatTurf(newTurf)
     });
   } catch (error) {
     next(error);
@@ -241,12 +278,14 @@ export const createTurf = async (req, res, next) => {
  */
 export const updateTurf = async (req, res, next) => {
   try {
-    const turf = await TurfProfile.findById(req.params.id);
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: req.params.id }
+    });
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Venue not found.' });
     }
 
-    if (turf.owner.toString() !== req.user.id) {
+    if (turf.ownerId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Unauthorized to modify this venue.' });
     }
 
@@ -265,32 +304,40 @@ export const updateTurf = async (req, res, next) => {
       contactDetails
     } = req.body;
 
-    if (businessName) turf.businessName = businessName.trim();
-    if (tagline !== undefined) turf.tagline = tagline.trim();
-    if (category) turf.category = category.trim();
-    if (sports && Array.isArray(sports)) turf.sports = sports;
-    if (hourlyRate) turf.hourlyRate = Number(hourlyRate);
-    if (city) turf.city = city.trim();
-    if (address) turf.address = address.trim();
-    if (amenities && Array.isArray(amenities)) turf.amenities = amenities;
-    if (images && Array.isArray(images)) turf.images = images;
-    if (openingHour) turf.openingHour = openingHour;
-    if (closingHour) turf.closingHour = closingHour;
+    const data = {};
+    if (businessName) data.businessName = businessName.trim();
+    if (tagline !== undefined) data.tagline = tagline.trim();
+    if (category) data.category = category.trim();
+    if (sports && Array.isArray(sports)) data.sports = sports;
+    if (hourlyRate) data.hourlyRate = Number(hourlyRate);
+    if (city) data.city = city.trim();
+    if (address) data.address = address.trim();
+    if (amenities && Array.isArray(amenities)) data.amenities = amenities;
+    if (images && Array.isArray(images)) data.images = images;
+    if (openingHour) data.openingHour = openingHour;
+    if (closingHour) data.closingHour = closingHour;
     if (contactDetails && typeof contactDetails === 'object') {
-      turf.contactDetails = { ...turf.contactDetails, ...contactDetails };
+      const existingContact = turf.contactDetails && typeof turf.contactDetails === 'object' ? turf.contactDetails : {};
+      data.contactDetails = { ...existingContact, ...contactDetails };
     }
 
-    // Refresh slots with updated rate
-    if (hourlyRate || openingHour || closingHour) {
-      turf.slots = generateDailySlots(turf.openingHour, turf.closingHour, turf.hourlyRate);
+    // Refresh slots if rate or hours changed
+    const targetHourly = data.hourlyRate || turf.hourlyRate;
+    const targetOpen = data.openingHour || turf.openingHour;
+    const targetClose = data.closingHour || turf.closingHour;
+    if (data.hourlyRate || data.openingHour || data.closingHour) {
+      data.slots = generateDailySlots(targetOpen, targetClose, targetHourly);
     }
 
-    await turf.save();
+    const updated = await prisma.turfProfile.update({
+      where: { id: req.params.id },
+      data
+    });
 
     res.json({
       success: true,
       message: 'Venue updated successfully.',
-      turf: turf.toJSON()
+      turf: formatTurf(updated)
     });
   } catch (error) {
     next(error);
@@ -303,8 +350,10 @@ export const updateTurf = async (req, res, next) => {
  */
 export const getMyVenues = async (req, res, next) => {
   try {
-    const venues = await TurfProfile.find({ owner: req.user.id });
-    res.json(venues.map((v) => v.toJSON()));
+    const venues = await prisma.turfProfile.findMany({
+      where: { ownerId: req.user.id }
+    });
+    res.json(venues.map(formatTurf));
   } catch (error) {
     next(error);
   }
@@ -316,12 +365,14 @@ export const getMyVenues = async (req, res, next) => {
  */
 export const blockSlot = async (req, res, next) => {
   try {
-    const turf = await TurfProfile.findById(req.params.id);
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: req.params.id }
+    });
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Venue not found.' });
     }
 
-    if (turf.owner.toString() !== req.user.id) {
+    if (turf.ownerId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Unauthorized.' });
     }
 
@@ -330,14 +381,18 @@ export const blockSlot = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Date and slotId are required.' });
     }
 
-    turf.blockedSlots = turf.blockedSlots || [];
-    turf.blockedSlots.push({
+    const blockedSlots = Array.isArray(turf.blockedSlots) ? [...turf.blockedSlots] : [];
+    blockedSlots.push({
       date,
       slotId,
-      reason: reason || 'Reserved by Owner'
+      reason: reason || 'Reserved by Owner',
+      blockedAt: new Date().toISOString()
     });
 
-    await turf.save();
+    await prisma.turfProfile.update({
+      where: { id: req.params.id },
+      data: { blockedSlots }
+    });
 
     res.json({
       success: true,
@@ -354,21 +409,26 @@ export const blockSlot = async (req, res, next) => {
  */
 export const unblockSlot = async (req, res, next) => {
   try {
-    const turf = await TurfProfile.findById(req.params.id);
+    const turf = await prisma.turfProfile.findUnique({
+      where: { id: req.params.id }
+    });
     if (!turf) {
       return res.status(404).json({ success: false, error: 'Venue not found.' });
     }
 
-    if (turf.owner.toString() !== req.user.id) {
+    if (turf.ownerId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Unauthorized.' });
     }
 
     const { date, slotId } = req.body;
-    turf.blockedSlots = (turf.blockedSlots || []).filter(
+    const blockedSlots = (Array.isArray(turf.blockedSlots) ? turf.blockedSlots : []).filter(
       (b) => !(b.date === date && b.slotId === slotId)
     );
 
-    await turf.save();
+    await prisma.turfProfile.update({
+      where: { id: req.params.id },
+      data: { blockedSlots }
+    });
 
     res.json({
       success: true,
@@ -385,10 +445,15 @@ export const unblockSlot = async (req, res, next) => {
  */
 export const getOwnerStats = async (req, res, next) => {
   try {
-    const venues = await TurfProfile.find({ owner: req.user.id });
-    const venueIds = venues.map((v) => v._id);
+    const venues = await prisma.turfProfile.findMany({
+      where: { ownerId: req.user.id }
+    });
+    const venueIds = venues.map((v) => v.id);
 
-    const bookings = await Booking.find({ turf: { $in: venueIds } }).sort({ createdAt: -1 });
+    const bookings = await prisma.booking.findMany({
+      where: { turfId: { in: venueIds } },
+      orderBy: { createdAt: 'desc' }
+    });
 
     const totalRevenue = bookings
       .filter((b) => b.status === 'Confirmed' || b.status === 'Completed')
@@ -404,7 +469,7 @@ export const getOwnerStats = async (req, res, next) => {
       confirmedCount,
       pendingRequests,
       totalRevenue,
-      recentBookings: bookings.slice(0, 10).map((b) => b.toJSON())
+      recentBookings: bookings.slice(0, 10).map(formatBooking)
     });
   } catch (error) {
     next(error);

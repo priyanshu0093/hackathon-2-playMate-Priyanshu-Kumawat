@@ -5,7 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import { connectDB } from './config/db.js';
+import prisma from './config/prisma.js';
 import { initSocket } from './socket/index.js';
 
 // Modular Route Handlers
@@ -57,8 +57,10 @@ app.use(cookieParser());
 // Static uploads serving for avatars and turf photographs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Connect to MongoDB Atlas / Local MongoDB
-connectDB();
+// Connect to Supabase PostgreSQL via Prisma
+prisma.$connect()
+  .then(() => console.log('[PlayMate Backend] Connected to Supabase PostgreSQL via Prisma ORM'))
+  .catch((err) => console.error('[Prisma Connection Warning]:', err.message));
 
 // Initialize Socket.IO with HTTP server
 initSocket(httpServer, allowedOrigins);
@@ -122,14 +124,23 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    database: 'MongoDB Atlas / Local',
-    socket: 'active',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ok',
+      database: 'Supabase PostgreSQL (Prisma)',
+      socket: 'active',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      database: 'Supabase PostgreSQL Disconnected',
+      error: err.message
+    });
+  }
 });
 
 // Centralized error handling

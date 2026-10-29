@@ -10,9 +10,10 @@ export const FeaturedMatches = () => {
   const { matches, joinMatch, currentUser, selectedCity, isSameCity } = useApp();
   const navigate = useNavigate();
 
-  // Filter for selected city
+  // Filter for selected city, fallback gracefully to top verified matches if none in city yet
   const cityMatches = matches.filter((m) => isSameCity(m.city, selectedCity));
-  const featured = cityMatches.slice(0, 3);
+  const hasLocal = cityMatches.length > 0;
+  const featured = hasLocal ? cityMatches.slice(0, 3) : matches.slice(0, 3);
 
   return (
     <section id="featured-matches" className="py-20 bg-white border-b border-[#E5EDF7]">
@@ -20,13 +21,15 @@ export const FeaturedMatches = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
             <span className="text-xs font-bold text-[#2F80ED] tracking-widest uppercase bg-[#D9EAFE]/60 px-3 py-1 rounded-full">
-              Live Lineups in {selectedCity}
+              {hasLocal ? `Live Lineups in ${selectedCity}` : `Featured Matches`}
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#172338] tracking-tight mt-3">
               Featured Upcoming Matches
             </h2>
             <p className="text-sm sm:text-base text-[#687587] mt-1">
-              Join open games with active rosters looking for players in {selectedCity}.
+              {hasLocal
+                ? `Join open games with active rosters looking for players in ${selectedCity}.`
+                : `Join top trending games looking for passionate players nearby.`}
             </p>
           </div>
 

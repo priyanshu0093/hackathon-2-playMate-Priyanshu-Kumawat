@@ -1,6 +1,5 @@
-import Match from '../models/Match.js';
-import Booking from '../models/Booking.js';
 import crypto from 'crypto';
+import prisma from '../config/prisma.js';
 
 /**
  * GET /api/payments/match/:matchId
@@ -8,18 +7,20 @@ import crypto from 'crypto';
  */
 export const getMatchSplit = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.matchId);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.matchId }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    const participants = match.participants || [];
+    const participants = Array.isArray(match.participants) ? match.participants : [];
     const totalCost = match.estimatedCost || 0;
     const participantCount = participants.length || 1;
     const perPlayerShare = participantCount > 0 ? Math.ceil(totalCost / participantCount) : 0;
 
     const breakdown = participants.map((p) => ({
-      userId: p.user.toString(),
+      userId: p.user ? String(p.user) : '',
       name: p.name,
       avatar: p.avatar,
       role: p.role,
@@ -33,7 +34,7 @@ export const getMatchSplit = async (req, res, next) => {
 
     res.json({
       success: true,
-      matchId: match._id,
+      matchId: match.id,
       title: match.title,
       totalCost,
       participantCount,
@@ -56,19 +57,22 @@ export const updatePlayerPaymentStatus = async (req, res, next) => {
     const { matchId, playerId } = req.params;
     const { status, paymentMode } = req.body;
 
-    const match = await Match.findById(matchId);
+    const match = await prisma.match.findUnique({
+      where: { id: matchId }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    const isHost = match.host.toString() === req.user.id;
+    const isHost = match.hostId === req.user.id;
     const isSelf = req.user.id === playerId;
 
     if (!isHost && !isSelf) {
       return res.status(403).json({ success: false, error: 'Unauthorized to update payment status.' });
     }
 
-    const participant = match.participants.find((p) => p.user.toString() === playerId);
+    const participants = Array.isArray(match.participants) ? [...match.participants] : [];
+    const participant = participants.find((p) => p.user === playerId || String(p.user) === String(playerId));
     if (!participant) {
       return res.status(404).json({ success: false, error: 'Player not in match roster.' });
     }
@@ -78,7 +82,10 @@ export const updatePlayerPaymentStatus = async (req, res, next) => {
       participant.paymentId = `PAY_${paymentMode.toUpperCase()}_${Date.now()}`;
     }
 
-    await match.save();
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { participants }
+    });
 
     res.json({
       success: true,
@@ -101,7 +108,6 @@ export const createRazorpayOrder = async (req, res) => {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret || keyId === 'your_razorpay_key_id') {
-    // Return transparent demo payment payload
     return res.json({
       success: true,
       mode: 'demo_simulation',
@@ -116,7 +122,6 @@ export const createRazorpayOrder = async (req, res) => {
   }
 
   try {
-    // If genuine Razorpay credentials exist
     const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
     const response = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -151,7 +156,6 @@ export const verifyRazorpayPayment = async (req, res) => {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keySecret || keySecret === 'your_razorpay_key_secret') {
-    // In demo mode
     return res.json({
       success: true,
       mode: 'demo_verified',
@@ -170,12 +174,14 @@ export const verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid payment signature. Verification failed.' });
     }
 
-    // Update booking or match payment status
     if (bookingId) {
-      await Booking.findByIdAndUpdate(bookingId, {
-        paymentStatus: 'Paid',
-        paymentId: razorpay_payment_id,
-        paymentMode: 'online'
+      await prisma.booking.update({
+        where: { id: bookingId },
+        data: {
+          paymentStatus: 'Paid',
+          razorpayPaymentId: razorpay_payment_id,
+          paymentMethod: 'online'
+        }
       });
     }
 
@@ -188,4 +194,3 @@ export const verifyRazorpayPayment = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Signature verification error.' });
   }
 };
-

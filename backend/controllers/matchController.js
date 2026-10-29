@@ -1,7 +1,5 @@
-import Match from '../models/Match.js';
-import User from '../models/User.js';
-import Notification from '../models/Notification.js';
-import ChatMessage from '../models/ChatMessage.js';
+import prisma from '../config/prisma.js';
+import { formatMatch } from '../utils/formatters.js';
 
 /**
  * GET /api/matches
@@ -11,45 +9,52 @@ export const getMatches = async (req, res, next) => {
   try {
     const { sport, city, date, skillLevel, maxPrice, spotsAvailable, q } = req.query;
 
-    const query = { status: { $ne: 'Cancelled' } };
-
-    if (sport && sport !== 'all') {
-      query.sport = new RegExp(`^${sport.trim()}$`, 'i');
-    }
+    const where = {
+      status: { not: 'Cancelled' }
+    };
 
     if (city && city !== 'all') {
-      query.city = new RegExp(`^${city.trim()}$`, 'i');
+      where.city = { equals: city.trim(), mode: 'insensitive' };
     }
 
     if (date) {
-      query.date = date;
+      where.date = date;
     }
 
     if (skillLevel && skillLevel !== 'All Levels') {
-      query.skillLevel = { $in: [skillLevel, 'All Levels'] };
+      where.skillLevel = { in: [skillLevel, 'All Levels'] };
     }
 
     if (maxPrice) {
-      query.feePerPlayer = { $lte: Number(maxPrice) };
+      where.feePerPlayer = { lte: Number(maxPrice) };
     }
 
     if (spotsAvailable === 'true') {
-      query.status = 'Open';
+      where.status = 'Open';
+    }
+
+    let matches = await prisma.match.findMany({
+      where,
+      orderBy: [{ date: 'asc' }, { time: 'asc' }]
+    });
+
+    if (sport && sport !== 'all') {
+      const sportLower = sport.trim().toLowerCase();
+      matches = matches.filter((m) => m.sport && m.sport.toLowerCase() === sportLower);
     }
 
     if (q) {
-      const regex = new RegExp(q.trim(), 'i');
-      query.$or = [
-        { title: regex },
-        { location: regex },
-        { venue: regex },
-        { description: regex }
-      ];
+      const qLower = q.trim().toLowerCase();
+      matches = matches.filter((m) => {
+        const titleMatch = m.title && m.title.toLowerCase().includes(qLower);
+        const locMatch = m.location && m.location.toLowerCase().includes(qLower);
+        const venueMatch = m.venue && m.venue.toLowerCase().includes(qLower);
+        const descMatch = m.description && m.description.toLowerCase().includes(qLower);
+        return titleMatch || locMatch || venueMatch || descMatch;
+      });
     }
 
-    const matches = await Match.find(query).sort({ date: 1, time: 1 });
-
-    res.json(matches.map((m) => m.toJSON()));
+    res.json(matches.map(formatMatch));
   } catch (error) {
     next(error);
   }
@@ -61,24 +66,27 @@ export const getMatches = async (req, res, next) => {
  */
 export const getMatchById = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    const json = match.toJSON();
+    const formatted = formatMatch(match);
+    const joinRequests = Array.isArray(match.joinRequests) ? match.joinRequests : [];
 
     // Attach requests if user is the host
-    if (req.user && match.host.toString() === req.user.id) {
-      json.joinRequests = match.joinRequests;
+    if (req.user && match.hostId === req.user.id) {
+      formatted.joinRequests = joinRequests;
     } else if (req.user) {
       // Show only current user's request status
-      json.myRequest = match.joinRequests.find(
-        (r) => r.user.toString() === req.user.id
+      formatted.myRequest = joinRequests.find(
+        (r) => r.user === req.user.id || String(r.user) === String(req.user.id)
       );
     }
 
-    res.json(json);
+    res.json(formatted);
   } catch (error) {
     next(error);
   }
@@ -118,68 +126,83 @@ export const createMatch = async (req, res, next) => {
       });
     }
 
-    const hostUser = await User.findById(req.user.id);
+    const hostUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
     const capacity = Number(maxPlayers) || 10;
     const estCost = Number(estimatedCost) || 0;
     const perPlayerFee = Number(feePerPlayer) || (estCost > 0 ? Math.ceil(estCost / capacity) : 0);
 
-    const match = await Match.create({
-      title: title.trim(),
-      sport: sport.trim(),
-      description: description || '',
-      date,
-      time,
-      duration: duration || '1.5 hrs',
-      city: city.trim(),
-      location: location ? location.trim() : (venue || `${city} Sports Ground`),
-      venue: venue || 'Local Sports Venue',
-      venueId: venueId || null,
-      host: req.user.id,
-      hostName: hostUser ? hostUser.name : req.user.name,
-      hostAvatar: hostUser ? hostUser.avatar : '',
-      maxPlayers: capacity,
-      skillLevel: skillLevel || 'All Levels',
-      visibility: visibility || 'public',
-      isPublic: visibility !== 'private',
-      requiresApproval: !!requiresApproval,
-      estimatedCost: estCost,
-      feePerPlayer: perPlayerFee,
-      coverImage: coverImage || '',
-      rules: Array.isArray(rules) && rules.length ? rules : undefined,
-      participants: [
-        {
-          user: req.user.id,
-          name: hostUser ? hostUser.name : req.user.name,
-          avatar: hostUser ? hostUser.avatar : '',
-          role: hostUser?.playingRole || 'Host',
-          skillLevel: hostUser?.skillLevel || 'Intermediate',
-          team: 'Team A',
-          attended: true,
-          paymentStatus: 'Paid'
-        }
-      ]
+    const initialParticipants = [
+      {
+        user: req.user.id,
+        name: hostUser ? hostUser.name : req.user.name,
+        avatar: hostUser ? hostUser.avatar : '',
+        role: hostUser?.playingRole || 'Host',
+        skillLevel: hostUser?.skillLevel || 'Intermediate',
+        team: 'Team A',
+        attended: true,
+        paymentStatus: 'Paid'
+      }
+    ];
+
+    const match = await prisma.match.create({
+      data: {
+        title: title.trim(),
+        sport: sport.trim(),
+        description: description || '',
+        date,
+        time,
+        duration: duration || '1.5 hrs',
+        city: city.trim(),
+        location: location ? location.trim() : (venue || `${city} Sports Ground`),
+        venue: venue || 'Local Sports Venue',
+        venueId: venueId || null,
+        hostId: req.user.id,
+        hostName: hostUser ? hostUser.name : req.user.name,
+        hostAvatar: hostUser ? hostUser.avatar : '',
+        maxPlayers: capacity,
+        skillLevel: skillLevel || 'All Levels',
+        visibility: visibility || 'public',
+        isPublic: visibility !== 'private',
+        requiresApproval: !!requiresApproval,
+        estimatedCost: estCost,
+        feePerPlayer: perPlayerFee,
+        coverImage: coverImage || '',
+        rules: Array.isArray(rules) && rules.length ? rules : [],
+        participants: initialParticipants
+      }
     });
 
     // Auto-create initial welcoming chat message
-    await ChatMessage.create({
-      match: match._id,
-      sender: req.user.id,
-      senderName: match.hostName,
-      senderAvatar: match.hostAvatar,
-      text: `Match created! Welcome to ${match.title}. Discuss details, bibs, and coordination here.`
+    await prisma.chatMessage.create({
+      data: {
+        matchId: match.id,
+        senderId: req.user.id,
+        senderName: match.hostName,
+        senderAvatar: match.hostAvatar,
+        text: `Match created! Welcome to ${match.title}. Discuss details, bibs, and coordination here.`
+      }
     });
 
     // Increment host statistics
     if (hostUser) {
-      hostUser.stats = hostUser.stats || { played: 0, won: 0, lost: 0, hosted: 0, mvpCount: 0 };
-      hostUser.stats.hosted = (hostUser.stats.hosted || 0) + 1;
-      await hostUser.save();
+      const stats = (hostUser.stats && typeof hostUser.stats === 'object')
+        ? { ...hostUser.stats }
+        : { played: 0, won: 0, lost: 0, hosted: 0, mvpCount: 0 };
+      stats.hosted = (stats.hosted || 0) + 1;
+
+      await prisma.user.update({
+        where: { id: hostUser.id },
+        data: { stats }
+      });
     }
 
     res.status(201).json({
       success: true,
       message: 'Match created successfully.',
-      match: match.toJSON()
+      match: formatMatch(match)
     });
   } catch (error) {
     next(error);
@@ -192,12 +215,14 @@ export const createMatch = async (req, res, next) => {
  */
 export const updateMatch = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the match host can modify this match.' });
     }
 
@@ -206,18 +231,22 @@ export const updateMatch = async (req, res, next) => {
       'venue', 'skillLevel', 'maxPlayers', 'visibility', 'rules', 'feePerPlayer'
     ];
 
+    const data = {};
     for (const field of updatable) {
       if (req.body[field] !== undefined) {
-        match[field] = req.body[field];
+        data[field] = req.body[field];
       }
     }
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data
+    });
 
     res.json({
       success: true,
       message: 'Match updated successfully.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -230,29 +259,36 @@ export const updateMatch = async (req, res, next) => {
  */
 export const cancelMatch = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the match host can cancel this match.' });
     }
 
-    match.status = 'Cancelled';
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: { status: 'Cancelled' }
+    });
 
     // Notify all participants
-    for (const p of match.participants) {
-      if (p.user.toString() !== req.user.id) {
-        await Notification.create({
-          recipient: p.user,
-          sender: req.user.id,
-          senderName: match.hostName,
-          type: 'booking_cancelled',
-          title: 'Match Cancelled',
-          message: `The match "${match.title}" has been cancelled by the host.`,
-          actionLink: '/player/matches'
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    for (const p of participants) {
+      if (p.user && p.user !== req.user.id) {
+        await prisma.notification.create({
+          data: {
+            recipientId: p.user,
+            senderId: req.user.id,
+            senderName: match.hostName,
+            type: 'booking_cancelled',
+            title: 'Match Cancelled',
+            message: `The match "${match.title}" has been cancelled by the host.`,
+            actionLink: '/player/matches'
+          }
         });
       }
     }
@@ -260,7 +296,7 @@ export const cancelMatch = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Match cancelled and participants notified.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -273,7 +309,9 @@ export const cancelMatch = async (req, res, next) => {
  */
 export const joinMatch = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
@@ -283,15 +321,17 @@ export const joinMatch = async (req, res, next) => {
     }
 
     const userId = req.user.id;
+    const participants = Array.isArray(match.participants) ? [...match.participants] : [];
+    const joinRequests = Array.isArray(match.joinRequests) ? [...match.joinRequests] : [];
 
     // Check duplicate participation
-    const alreadyJoined = match.participants.some((p) => p.user.toString() === userId);
+    const alreadyJoined = participants.some((p) => p.user === userId || String(p.user) === String(userId));
     if (alreadyJoined) {
       return res.status(400).json({ success: false, error: 'You are already in this match roster.' });
     }
 
     // Check capacity
-    if (match.participants.length >= match.maxPlayers) {
+    if (participants.length >= match.maxPlayers) {
       return res.status(400).json({
         success: false,
         error: 'This match is full. You can join the waitlist instead.',
@@ -299,16 +339,20 @@ export const joinMatch = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
 
     // If match requires host approval
     if (match.requiresApproval) {
-      const alreadyRequested = match.joinRequests.some((r) => r.user.toString() === userId && r.status === 'pending');
+      const alreadyRequested = joinRequests.some(
+        (r) => (r.user === userId || String(r.user) === String(userId)) && r.status === 'pending'
+      );
       if (alreadyRequested) {
         return res.status(400).json({ success: false, error: 'Join request already submitted.' });
       }
 
-      match.joinRequests.push({
+      joinRequests.push({
         user: userId,
         name: user.name,
         avatar: user.avatar,
@@ -316,29 +360,34 @@ export const joinMatch = async (req, res, next) => {
         status: 'pending'
       });
 
-      await match.save();
+      const updated = await prisma.match.update({
+        where: { id: req.params.id },
+        data: { joinRequests }
+      });
 
       // Notify host
-      await Notification.create({
-        recipient: match.host,
-        sender: userId,
-        senderName: user.name,
-        type: 'join_request',
-        title: 'New Join Request',
-        message: `${user.name} requested to join "${match.title}".`,
-        actionLink: `/player/matches/${match._id}`
+      await prisma.notification.create({
+        data: {
+          recipientId: match.hostId,
+          senderId: userId,
+          senderName: user.name,
+          type: 'join_request',
+          title: 'New Join Request',
+          message: `${user.name} requested to join "${match.title}".`,
+          actionLink: `/player/matches/${match.id}`
+        }
       });
 
       return res.json({
         success: true,
         pendingApproval: true,
         message: 'Join request submitted for host approval.',
-        match: match.toJSON()
+        match: formatMatch(updated)
       });
     }
 
     // Direct join
-    match.participants.push({
+    participants.push({
       user: userId,
       name: user.name,
       avatar: user.avatar,
@@ -349,31 +398,35 @@ export const joinMatch = async (req, res, next) => {
       paymentStatus: 'Pending'
     });
 
-    if (match.participants.length >= match.maxPlayers) {
-      match.status = 'Full';
-    } else {
-      match.status = 'Open';
-    }
+    const newStatus = participants.length >= match.maxPlayers ? 'Full' : 'Open';
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: {
+        participants,
+        status: newStatus
+      }
+    });
 
     // Notify host
-    if (match.host.toString() !== userId) {
-      await Notification.create({
-        recipient: match.host,
-        sender: userId,
-        senderName: user.name,
-        type: 'join_request',
-        title: 'New Player Joined!',
-        message: `${user.name} joined "${match.title}".`,
-        actionLink: `/player/matches/${match._id}`
+    if (match.hostId !== userId) {
+      await prisma.notification.create({
+        data: {
+          recipientId: match.hostId,
+          senderId: userId,
+          senderName: user.name,
+          type: 'join_request',
+          title: 'New Player Joined!',
+          message: `${user.name} joined "${match.title}".`,
+          actionLink: `/player/matches/${match.id}`
+        }
       });
     }
 
     res.json({
       success: true,
       message: 'Joined match successfully!',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -386,37 +439,45 @@ export const joinMatch = async (req, res, next) => {
  */
 export const leaveMatch = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
     const userId = req.user.id;
 
-    if (match.host.toString() === userId) {
+    if (match.hostId === userId) {
       return res.status(400).json({
         success: false,
         error: 'Host cannot leave the match. You can cancel the match if needed.'
       });
     }
 
-    const participantIdx = match.participants.findIndex((p) => p.user.toString() === userId);
+    const participants = Array.isArray(match.participants) ? [...match.participants] : [];
+    const waitlist = Array.isArray(match.waitlist) ? [...match.waitlist] : [];
+
+    const participantIdx = participants.findIndex(
+      (p) => p.user === userId || String(p.user) === String(userId)
+    );
     if (participantIdx === -1) {
       return res.status(400).json({ success: false, error: 'You are not in this match.' });
     }
 
-    // Remove user
-    match.participants.splice(participantIdx, 1);
+    participants.splice(participantIdx, 1);
 
-    // Substitute promotion: If waitlist has players, promote the first in line
+    // Substitute promotion
     let promotedPlayer = null;
-    if (match.waitlist && match.waitlist.length > 0) {
-      const nextInLine = match.waitlist.shift();
-      const nextUser = await User.findById(nextInLine.user);
+    if (waitlist.length > 0) {
+      const nextInLine = waitlist.shift();
+      const nextUser = await prisma.user.findUnique({
+        where: { id: nextInLine.user }
+      });
 
       if (nextUser) {
-        match.participants.push({
-          user: nextUser._id,
+        participants.push({
+          user: nextUser.id,
           name: nextUser.name,
           avatar: nextUser.avatar,
           role: nextUser.playingRole || 'Player',
@@ -428,29 +489,35 @@ export const leaveMatch = async (req, res, next) => {
 
         promotedPlayer = nextUser;
 
-        // Notify the promoted substitute player
-        await Notification.create({
-          recipient: nextUser._id,
-          type: 'request_approved',
-          title: 'Promoted from Waitlist! 🏆',
-          message: `A spot opened up! You are now in the active lineup for "${match.title}".`,
-          actionLink: `/player/matches/${match._id}`
+        await prisma.notification.create({
+          data: {
+            recipientId: nextUser.id,
+            type: 'request_approved',
+            title: 'Promoted from Waitlist! 🏆',
+            message: `A spot opened up! You are now in the active lineup for "${match.title}".`,
+            actionLink: `/player/matches/${match.id}`
+          }
         });
       }
     }
 
-    if (match.participants.length < match.maxPlayers) {
-      match.status = 'Open';
-    }
+    const newStatus = participants.length < match.maxPlayers ? 'Open' : 'Full';
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: {
+        participants,
+        waitlist,
+        status: newStatus
+      }
+    });
 
     res.json({
       success: true,
       message: promotedPlayer
         ? `Left match. Promoted waitlisted substitute ${promotedPlayer.name}.`
         : 'Left match successfully.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -463,36 +530,45 @@ export const leaveMatch = async (req, res, next) => {
  */
 export const joinWaitlist = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
     const userId = req.user.id;
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    const waitlist = Array.isArray(match.waitlist) ? [...match.waitlist] : [];
 
-    if (match.participants.some((p) => p.user.toString() === userId)) {
+    if (participants.some((p) => p.user === userId || String(p.user) === String(userId))) {
       return res.status(400).json({ success: false, error: 'You are already in the match roster.' });
     }
 
-    if (match.waitlist.some((w) => w.user.toString() === userId)) {
+    if (waitlist.some((w) => w.user === userId || String(w.user) === String(userId))) {
       return res.status(400).json({ success: false, error: 'You are already on the waitlist.' });
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
 
-    match.waitlist.push({
+    waitlist.push({
       user: userId,
       name: user.name,
       avatar: user.avatar
     });
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: { waitlist }
+    });
 
     res.json({
       success: true,
       message: 'Added to waitlist. You will be automatically enrolled if a player leaves.',
-      waitlistPosition: match.waitlist.length,
-      match: match.toJSON()
+      waitlistPosition: waitlist.length,
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -505,31 +581,40 @@ export const joinWaitlist = async (req, res, next) => {
  */
 export const approveJoinRequest = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the host can approve requests.' });
     }
 
     const { userId } = req.params;
-    const reqIndex = match.joinRequests.findIndex((r) => r.user.toString() === userId && r.status === 'pending');
+    const joinRequests = Array.isArray(match.joinRequests) ? [...match.joinRequests] : [];
+    const participants = Array.isArray(match.participants) ? [...match.participants] : [];
+
+    const reqIndex = joinRequests.findIndex(
+      (r) => (r.user === userId || String(r.user) === String(userId)) && r.status === 'pending'
+    );
 
     if (reqIndex === -1) {
       return res.status(404).json({ success: false, error: 'Pending join request not found.' });
     }
 
-    if (match.participants.length >= match.maxPlayers) {
+    if (participants.length >= match.maxPlayers) {
       return res.status(400).json({ success: false, error: 'Cannot approve: match is already at full capacity.' });
     }
 
-    const approvedUser = await User.findById(userId);
+    const approvedUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
 
-    match.joinRequests[reqIndex].status = 'approved';
-    match.participants.push({
-      user: approvedUser._id,
+    joinRequests[reqIndex].status = 'approved';
+    participants.push({
+      user: approvedUser.id,
       name: approvedUser.name,
       avatar: approvedUser.avatar,
       role: approvedUser.playingRole || 'Player',
@@ -539,27 +624,34 @@ export const approveJoinRequest = async (req, res, next) => {
       paymentStatus: 'Pending'
     });
 
-    if (match.participants.length >= match.maxPlayers) {
-      match.status = 'Full';
-    }
+    const newStatus = participants.length >= match.maxPlayers ? 'Full' : match.status;
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: {
+        joinRequests,
+        participants,
+        status: newStatus
+      }
+    });
 
     // Notify approved player
-    await Notification.create({
-      recipient: approvedUser._id,
-      sender: req.user.id,
-      senderName: match.hostName,
-      type: 'request_approved',
-      title: 'Join Request Approved! ⚽',
-      message: `Your request to join "${match.title}" was approved by the host.`,
-      actionLink: `/player/matches/${match._id}`
+    await prisma.notification.create({
+      data: {
+        recipientId: approvedUser.id,
+        senderId: req.user.id,
+        senderName: match.hostName,
+        type: 'request_approved',
+        title: 'Join Request Approved! ⚽',
+        message: `Your request to join "${match.title}" was approved by the host.`,
+        actionLink: `/player/matches/${match.id}`
+      }
     });
 
     res.json({
       success: true,
       message: `${approvedUser.name} added to match roster.`,
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -572,40 +664,52 @@ export const approveJoinRequest = async (req, res, next) => {
  */
 export const rejectJoinRequest = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the host can reject requests.' });
     }
 
     const { userId } = req.params;
-    const reqIndex = match.joinRequests.findIndex((r) => r.user.toString() === userId && r.status === 'pending');
+    const joinRequests = Array.isArray(match.joinRequests) ? [...match.joinRequests] : [];
+
+    const reqIndex = joinRequests.findIndex(
+      (r) => (r.user === userId || String(r.user) === String(userId)) && r.status === 'pending'
+    );
 
     if (reqIndex === -1) {
       return res.status(404).json({ success: false, error: 'Pending join request not found.' });
     }
 
-    match.joinRequests[reqIndex].status = 'rejected';
-    await match.save();
+    joinRequests[reqIndex].status = 'rejected';
+
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: { joinRequests }
+    });
 
     // Notify rejected player
-    await Notification.create({
-      recipient: userId,
-      sender: req.user.id,
-      senderName: match.hostName,
-      type: 'request_rejected',
-      title: 'Join Request Declined',
-      message: `Your request to join "${match.title}" was declined by the host.`,
-      actionLink: '/player/matches'
+    await prisma.notification.create({
+      data: {
+        recipientId: userId,
+        senderId: req.user.id,
+        senderName: match.hostName,
+        type: 'request_rejected',
+        title: 'Join Request Declined',
+        message: `Your request to join "${match.title}" was declined by the host.`,
+        actionLink: '/player/matches'
+      }
     });
 
     res.json({
       success: true,
       message: 'Join request declined.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -618,12 +722,14 @@ export const rejectJoinRequest = async (req, res, next) => {
  */
 export const invitePlayer = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the match host can invite players.' });
     }
 
@@ -632,31 +738,37 @@ export const invitePlayer = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Target player ID is required.' });
     }
 
-    const targetUser = await User.findById(userId);
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
     if (!targetUser) {
       return res.status(404).json({ success: false, error: 'Player not found.' });
     }
 
-    if (match.participants.some((p) => p.user.toString() === userId)) {
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    if (participants.some((p) => p.user === userId || String(p.user) === String(userId))) {
       return res.status(400).json({ success: false, error: 'Player is already in this match.' });
     }
 
-    // Record invitation
-    match.invitedPlayers = match.invitedPlayers || [];
-    if (!match.invitedPlayers.some((i) => i.user.toString() === userId)) {
-      match.invitedPlayers.push({ user: userId });
-      await match.save();
+    const invitedPlayers = Array.isArray(match.invitedPlayers) ? [...match.invitedPlayers] : [];
+    if (!invitedPlayers.some((i) => i.user === userId || String(i.user) === String(userId))) {
+      invitedPlayers.push({ user: userId });
+      await prisma.match.update({
+        where: { id: req.params.id },
+        data: { invitedPlayers }
+      });
     }
 
-    // Create notification
-    await Notification.create({
-      recipient: userId,
-      sender: req.user.id,
-      senderName: match.hostName,
-      type: 'match_invite',
-      title: `Match Invite from ${match.hostName}`,
-      message: `You were invited to join "${match.title}" on ${match.date} at ${match.time}.`,
-      actionLink: `/player/matches/${match._id}`
+    await prisma.notification.create({
+      data: {
+        recipientId: userId,
+        senderId: req.user.id,
+        senderName: match.hostName,
+        type: 'match_invite',
+        title: `Match Invite from ${match.hostName}`,
+        message: `You were invited to join "${match.title}" on ${match.date} at ${match.time}.`,
+        actionLink: `/player/matches/${match.id}`
+      }
     });
 
     res.json({
@@ -674,21 +786,22 @@ export const invitePlayer = async (req, res, next) => {
  */
 export const balanceTeams = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the match host can balance teams.' });
     }
 
-    const participants = [...match.participants];
+    const participants = Array.isArray(match.participants) ? [...match.participants] : [];
     if (participants.length < 2) {
       return res.status(400).json({ success: false, error: 'Need at least 2 players to form teams.' });
     }
 
-    // Rank participants by skill level weight
     const skillWeights = {
       Professional: 4,
       Advanced: 3,
@@ -703,7 +816,6 @@ export const balanceTeams = async (req, res, next) => {
       return weightB - weightA;
     });
 
-    // Snake draft distribution for balance: A, B, B, A, A, B...
     const teamA = [];
     const teamB = [];
 
@@ -728,18 +840,23 @@ export const balanceTeams = async (req, res, next) => {
       }
     });
 
-    match.participants = participants;
-    match.teams = {
+    const teams = {
       teamA: { name: 'Team Blue', score: 0, players: teamA },
       teamB: { name: 'Team Orange', score: 0, players: teamB }
     };
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: {
+        participants,
+        teams
+      }
+    });
 
     res.json({
       success: true,
       message: 'Teams balanced deterministically based on player skill levels.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);
@@ -752,30 +869,44 @@ export const balanceTeams = async (req, res, next) => {
  */
 export const updateAttendance = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the match host can mark attendance.' });
     }
 
-    const { attendance } = req.body; // e.g. [{ userId, attended: true }]
+    const { attendance } = req.body;
+    let participants = Array.isArray(match.participants) ? [...match.participants] : [];
+
     if (Array.isArray(attendance)) {
       for (const item of attendance) {
-        const participant = match.participants.find((p) => p.user.toString() === item.userId);
+        const participant = participants.find((p) => p.user === item.userId || String(p.user) === String(item.userId));
         if (participant) {
           participant.attended = !!item.attended;
         }
       }
-      await match.save();
+
+      const updated = await prisma.match.update({
+        where: { id: req.params.id },
+        data: { participants }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Attendance records updated.',
+        match: formatMatch(updated)
+      });
     }
 
     res.json({
       success: true,
-      message: 'Attendance records updated.',
-      match: match.toJSON()
+      message: 'Attendance records unchanged.',
+      match: formatMatch(match)
     });
   } catch (error) {
     next(error);
@@ -788,12 +919,14 @@ export const updateAttendance = async (req, res, next) => {
  */
 export const completeMatch = async (req, res, next) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const match = await prisma.match.findUnique({
+      where: { id: req.params.id }
+    });
     if (!match) {
       return res.status(404).json({ success: false, error: 'Match not found.' });
     }
 
-    if (match.host.toString() !== req.user.id) {
+    if (match.hostId !== req.user.id) {
       return res.status(403).json({ success: false, error: 'Only the host can record match results.' });
     }
 
@@ -805,40 +938,56 @@ export const completeMatch = async (req, res, next) => {
     if (aScore > bScore) winner = 'Team A';
     else if (bScore > aScore) winner = 'Team B';
 
-    match.status = 'Completed';
-    match.result = {
+    const result = {
       winner,
       teamAScore: aScore,
       teamBScore: bScore,
       mvp: mvp || '',
       notes: notes || '',
-      completedAt: new Date()
+      completedAt: new Date().toISOString()
     };
 
-    await match.save();
+    const updated = await prisma.match.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'Completed',
+        result
+      }
+    });
 
     // Update player statistics for all participants
-    for (const p of match.participants) {
-      if (p.attended) {
-        const user = await User.findById(p.user);
+    const participants = Array.isArray(match.participants) ? match.participants : [];
+    for (const p of participants) {
+      if (p.attended && p.user) {
+        const user = await prisma.user.findUnique({
+          where: { id: p.user }
+        });
         if (user) {
-          user.matchesPlayed = (user.matchesPlayed || 0) + 1;
-          user.stats = user.stats || { played: 0, won: 0, lost: 0, hosted: 0, mvpCount: 0 };
-          user.stats.played = (user.stats.played || 0) + 1;
+          const stats = (user.stats && typeof user.stats === 'object')
+            ? { ...user.stats }
+            : { played: 0, won: 0, lost: 0, hosted: 0, mvpCount: 0 };
+
+          stats.played = (stats.played || 0) + 1;
 
           if (winner !== 'Draw') {
             if (p.team === winner) {
-              user.stats.won = (user.stats.won || 0) + 1;
+              stats.won = (stats.won || 0) + 1;
             } else if (p.team && p.team !== 'Unassigned') {
-              user.stats.lost = (user.stats.lost || 0) + 1;
+              stats.lost = (stats.lost || 0) + 1;
             }
           }
 
           if (mvp && user.name.toLowerCase() === mvp.trim().toLowerCase()) {
-            user.stats.mvpCount = (user.stats.mvpCount || 0) + 1;
+            stats.mvpCount = (stats.mvpCount || 0) + 1;
           }
 
-          await user.save();
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              matchesPlayed: (user.matchesPlayed || 0) + 1,
+              stats
+            }
+          });
         }
       }
     }
@@ -846,7 +995,7 @@ export const completeMatch = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Match completed and player statistics updated.',
-      match: match.toJSON()
+      match: formatMatch(updated)
     });
   } catch (error) {
     next(error);

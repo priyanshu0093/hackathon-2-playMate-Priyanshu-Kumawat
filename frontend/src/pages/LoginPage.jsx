@@ -213,6 +213,15 @@ export const LoginPage = () => {
     setIsSubmitting(true);
     setServerError('');
     setServerSuccess('');
+    if (role === 'owner' || role === 'turf_owner') {
+      setEmail('sunil@kickoffarena.com');
+      setPassword('playmate123');
+      setActiveRole('owner');
+    } else {
+      setEmail('alex.morgan@playmate.io');
+      setPassword('playmate123');
+      setActiveRole('player');
+    }
     await login(role, navigate);
     setIsSubmitting(false);
   };
@@ -579,7 +588,7 @@ export const LoginPage = () => {
               {/* 1-Click Demo Login Shortcuts */}
               <div className="pt-4 border-t border-[#E5EDF7] space-y-2">
                 <span className="block text-[10px] font-bold text-[#687587] uppercase tracking-wider text-center">
-                  ⚡ 1-Click Demo Logins (MongoDB Verified)
+                  ⚡ 1-Click Demo Logins (Supabase Verified)
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button

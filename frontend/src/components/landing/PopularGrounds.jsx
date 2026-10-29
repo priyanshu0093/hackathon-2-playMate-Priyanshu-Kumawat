@@ -9,9 +9,10 @@ export const PopularGrounds = () => {
   const { grounds, selectedCity, isSameCity } = useApp();
   const navigate = useNavigate();
 
-  // Top grounds in selected city
+  // Top grounds in selected city, fallback to all verified arenas if selected city has none yet
   const cityGrounds = grounds.filter((g) => isSameCity(g.city, selectedCity));
-  const topGrounds = cityGrounds.slice(0, 3);
+  const hasLocal = cityGrounds.length > 0;
+  const topGrounds = hasLocal ? cityGrounds.slice(0, 3) : grounds.slice(0, 3);
 
   return (
     <section id="popular-grounds" className="py-20 bg-[#F4F8FD]">
@@ -19,13 +20,15 @@ export const PopularGrounds = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
             <span className="text-xs font-bold text-[#2F80ED] tracking-widest uppercase bg-[#D9EAFE]/60 px-3 py-1 rounded-full">
-              Verified Arenas in {selectedCity}
+              {hasLocal ? `Verified Arenas in ${selectedCity}` : `Top Verified Sports Venues`}
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#172338] tracking-tight mt-3">
               Popular Grounds & Turfs
             </h2>
             <p className="text-sm sm:text-base text-[#687587] mt-1">
-              Top-rated sports venues in {selectedCity} with guaranteed slots, floodlights, and premium turf grass.
+              {hasLocal
+                ? `Top-rated sports venues in ${selectedCity} with guaranteed slots, floodlights, and premium turf grass.`
+                : `Top-rated sports venues with guaranteed slots, floodlights, and premium turf grass across verified cities.`}
             </p>
           </div>
 

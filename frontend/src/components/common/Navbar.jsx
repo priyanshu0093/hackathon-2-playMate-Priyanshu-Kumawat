@@ -266,16 +266,9 @@ export const Navbar = ({ variant = 'player' }) => {
                 </Link>
                 <Link
                   to="/login"
-                  className="px-3.5 py-2 text-xs font-bold text-[#172338] dark:text-slate-200 hover:text-[#2F80ED] transition-colors"
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-md shadow-[#2F80ED]/25 transition-all duration-200"
                 >
                   Sign In
-                </Link>
-                <Link
-                  to="/player"
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-md shadow-[#2F80ED]/25 transition-all duration-200 flex items-center gap-1.5"
-                >
-                  <span>Launch App</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             ) : (

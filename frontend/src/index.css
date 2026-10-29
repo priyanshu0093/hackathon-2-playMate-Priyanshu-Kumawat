@@ -38,7 +38,7 @@ body {
   height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
@@ -157,7 +157,7 @@ html.dark .bg-\[\#D9EAFE\] {
 }
 
 html.dark ::-webkit-scrollbar-track {
-  background: #0b1329;
+  background: transparent;
 }
 
 html.dark ::-webkit-scrollbar-thumb {

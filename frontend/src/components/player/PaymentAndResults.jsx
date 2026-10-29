@@ -16,6 +16,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { apiUrl } from '../../config/api';
 
 export const PaymentAndResults = () => {
   const { id } = useParams();
@@ -62,8 +63,11 @@ export const PaymentAndResults = () => {
     let active = true;
     const fetchSplit = async () => {
       try {
-        const res = await fetch(`/api/payments/match/${match.id}`, {
-          credentials: 'include'
+        const token = localStorage.getItem('playmate_token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(apiUrl(`/api/payments/match/${match.id}`), {
+          credentials: 'include',
+          headers
         });
         if (res.ok && active) {
           const data = await res.json();
@@ -104,9 +108,14 @@ export const PaymentAndResults = () => {
 
     // Call backend API
     try {
-      await fetch(`/api/payments/match/${match.id}/player/${playerId}`, {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      await fetch(apiUrl(`/api/payments/match/${match.id}/player/${playerId}`), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({ paymentStatus: newStatus })
       });
@@ -127,9 +136,15 @@ export const PaymentAndResults = () => {
   const handlePayNow = async () => {
     setPayingRazorpay(true);
     try {
-      const orderRes = await fetch('/api/payments/create-order', {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+
+      const orderRes = await fetch(apiUrl('/api/payments/create-order'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           amount: sharePerPlayer,
@@ -140,9 +155,9 @@ export const PaymentAndResults = () => {
       const orderData = await orderRes.json();
 
       // Verify payment with backend (sandbox demo mode fallback)
-      const verifyRes = await fetch('/api/payments/verify', {
+      const verifyRes = await fetch(apiUrl('/api/payments/verify'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           razorpay_order_id: orderData.orderId || `order_${Date.now()}`,
@@ -173,9 +188,14 @@ export const PaymentAndResults = () => {
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch('/api/reviews', {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      await fetch(apiUrl('/api/reviews'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           type: 'turf',

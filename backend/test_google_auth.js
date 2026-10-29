@@ -6,11 +6,9 @@ process.env.GOOGLE_CALLBACK_URL = 'http://localhost:5001/api/auth/google/callbac
 process.env.CLIENT_URL = 'http://localhost:5173';
 
 import http from 'http';
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import app from './server.js';
-import User from './models/User.js';
-import TurfProfile from './models/TurfProfile.js';
+import prisma from './config/prisma.js';
 import { JWT_SECRET } from './middleware/auth.js';
 import { __setMockGoogleVerifyHandler } from './config/googleAuth.js';
 
@@ -208,13 +206,13 @@ const runGoogleAuthTests = async () => {
     const playerSessionToken = extractCookie(successPlayerRes.headers, 'token');
     assert(playerSessionToken !== null, 'Session cookie "token" set as HttpOnly on Google login');
 
-    const createdPlayer = await User.findOne({ googleId: newGooglePlayerId });
+    const createdPlayer = await prisma.user.findFirst({ where: { googleId: newGooglePlayerId } });
     assert(
       createdPlayer &&
         createdPlayer.email === newGooglePlayerEmail &&
         createdPlayer.role === 'player' &&
         createdPlayer.authProvider === 'google',
-      'New User document created in MongoDB with role "player" and authProvider "google"'
+      'New User document created in PostgreSQL with role "player" and authProvider "google"'
     );
 
     // 10. Successful Google authentication: New Turf Owner creation
@@ -247,8 +245,8 @@ const runGoogleAuthTests = async () => {
       'Successful Google turf owner authentication redirects to /auth/callback?role=owner'
     );
 
-    const createdOwner = await User.findOne({ googleId: newGoogleOwnerId });
-    const createdOwnerTurf = await TurfProfile.findOne({ owner: createdOwner._id });
+    const createdOwner = await prisma.user.findFirst({ where: { googleId: newGoogleOwnerId } });
+    const createdOwnerTurf = await prisma.turfProfile.findFirst({ where: { ownerId: createdOwner.id } });
     assert(
       createdOwner && createdOwner.role === 'turf_owner' && createdOwnerTurf !== null,
       'Turf Owner created with role "turf_owner" and linked TurfProfile initialized'
@@ -284,12 +282,14 @@ const runGoogleAuthTests = async () => {
     // 12. Safe Account Linking / Conflict Prevention (Section 5)
     // If a user exists with matching email created via password, do NOT auto-link
     const localUserEmail = `local_pwd_${Date.now()}@example.com`;
-    await User.create({
-      name: 'Local Account',
-      email: localUserEmail,
-      password: '$2a$10$abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr',
-      role: 'player',
-      authProvider: 'local'
+    await prisma.user.create({
+      data: {
+        name: 'Local Account',
+        email: localUserEmail,
+        password: '$2a$10$abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr',
+        role: 'player',
+        authProvider: 'local'
+      }
     });
 
     const initConflict = await request('/api/auth/google?role=player', {
@@ -344,7 +344,7 @@ const runGoogleAuthTests = async () => {
   } finally {
     __setMockGoogleVerifyHandler(null);
     server.close();
-    await mongoose.disconnect();
+    await prisma.$disconnect();
     process.exit(failed > 0 ? 1 : 0);
   }
 };

@@ -24,6 +24,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import { ImageWithFallback } from '../common/ImageWithFallback';
+import { apiUrl } from '../../config/api';
 
 export const PlayerProfile = () => {
   const { currentUser, updateProfile, matches, logout, showToast } = useApp();
@@ -114,9 +115,12 @@ export const PlayerProfile = () => {
 
     setUploadingAvatar(true);
     try {
-      const res = await fetch('/api/users/profile/avatar', {
+      const token = localStorage.getItem('playmate_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(apiUrl('/api/users/profile/avatar'), {
         method: 'POST',
         credentials: 'include',
+        headers,
         body: data
       });
       const resData = await res.json();

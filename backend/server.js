@@ -32,21 +32,49 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5001;
 
-// Allowed CORS origins (Vite frontend on 5173/5174/3000)
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174,http://localhost:3000').split(',');
+// Trust reverse proxy for secure cookies on cloud hosts (Vercel, Render, Railway)
+app.set('trust proxy', 1);
+
+// Allowed CORS origins (Vite frontend, Vercel deployments, custom origins)
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const clientUrl = (process.env.CLIENT_URL || '').trim();
+const allowedOrigins = [
+  ...configuredOrigins,
+  clientUrl,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Dev permissive
+      if (!origin) return callback(null, true);
+
+      if (
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('http://127.0.0.1:') ||
+        origin.startsWith('http://192.168.')
+      ) {
+        return callback(null, true);
       }
+
+      if (
+        configuredOrigins.includes(origin) ||
+        origin === clientUrl ||
+        origin.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+
+      callback(null, true);
     },
-    credentials: true, // Allow cookies to be sent across origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
   })
 );
 

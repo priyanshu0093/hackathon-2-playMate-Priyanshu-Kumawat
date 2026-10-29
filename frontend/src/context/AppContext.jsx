@@ -11,6 +11,7 @@ import {
   ADMIN_STATS
 } from '../data/mockData';
 import { normalizeCity, isSameCity } from '../utils/cityUtils';
+import { apiUrl, API_BASE_URL } from '../config/api';
 
 const AppContext = createContext(null);
 
@@ -66,17 +67,26 @@ export const AppProvider = ({ children }) => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Restore authenticated session on mount from secure HTTP-Only cookie
+  // Helper for Authorization header fallback (supports cross-origin Vercel deployment where third-party cookies may be blocked)
+  const getAuthHeaders = (extraHeaders = {}) => {
+    const token = authToken || localStorage.getItem('playmate_token') || sessionStorage.getItem('playmate_token');
+    return {
+      ...extraHeaders,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+  };
+
+  // Restore authenticated session on mount from secure HTTP-Only cookie / Bearer token
   useEffect(() => {
     let active = true;
 
-    // Clean up any legacy sensitive token in localStorage per security requirement
-    localStorage.removeItem('playmate_token');
-
     const verifySession = async () => {
       try {
-        const res = await fetch('/api/auth/me', {
-          credentials: 'include'
+        const storedToken = localStorage.getItem('playmate_token') || sessionStorage.getItem('playmate_token');
+        const headers = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+        const res = await fetch(apiUrl('/api/auth/me'), {
+          credentials: 'include',
+          headers
         });
 
         if (res.ok && active) {
@@ -84,11 +94,16 @@ export const AppProvider = ({ children }) => {
           const user = data.user || data;
           setCurrentUser(user);
           setAuthRole(user.role);
-          setAuthToken(data.token || null);
+          const validToken = data.token || storedToken || null;
+          setAuthToken(validToken);
+          if (validToken) {
+            localStorage.setItem('playmate_token', validToken);
+          }
         } else if (active) {
           setCurrentUser(null);
           setAuthRole(null);
           setAuthToken(null);
+          localStorage.removeItem('playmate_token');
         }
       } catch (err) {
         if (active) {
@@ -147,7 +162,7 @@ export const AppProvider = ({ children }) => {
           }
         : { email: email.trim(), password };
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -167,6 +182,9 @@ export const AppProvider = ({ children }) => {
       setCurrentUser(verifiedUser);
       setAuthRole(verifiedRole);
       setAuthToken(data.token || null);
+      if (data.token) {
+        localStorage.setItem('playmate_token', data.token);
+      }
 
       showToast(
         isSignUp ? 'Account Created! 🏆' : 'Welcome to PlayMate! 🏆',
@@ -188,9 +206,10 @@ export const AppProvider = ({ children }) => {
 
   const logout = async (navigate) => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch(apiUrl('/api/auth/logout'), {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
     } catch (err) {
       console.warn('[Logout]: Could not call backend logout:', err.message);
@@ -222,23 +241,29 @@ export const AppProvider = ({ children }) => {
     const loadBackendData = async () => {
       try {
         const promises = [
-          fetch(`/api/turfs?city=${encodeURIComponent(selectedCity)}`, { credentials: 'include' }),
-          fetch(`/api/matches?city=${encodeURIComponent(selectedCity)}`, { credentials: 'include' })
+          fetch(apiUrl(`/api/turfs?city=${encodeURIComponent(selectedCity)}`), { credentials: 'include' }),
+          fetch(apiUrl(`/api/matches?city=${encodeURIComponent(selectedCity)}`), { credentials: 'include' })
         ];
 
         // Fetch bookings, notifications, and chats using server-verified session cookie or token
         if (currentUser) {
           promises.push(
-            fetch(`/api/bookings?city=${encodeURIComponent(selectedCity)}`, {
+            fetch(apiUrl(`/api/bookings?city=${encodeURIComponent(selectedCity)}`), {
               credentials: 'include',
-              headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+              headers: getAuthHeaders()
             })
           );
           promises.push(
-            fetch('/api/notifications', { credentials: 'include' })
+            fetch(apiUrl('/api/notifications'), {
+              credentials: 'include',
+              headers: getAuthHeaders()
+            })
           );
           promises.push(
-            fetch('/api/chats', { credentials: 'include' })
+            fetch(apiUrl('/api/chats'), {
+              credentials: 'include',
+              headers: getAuthHeaders()
+            })
           );
         }
 
@@ -289,7 +314,7 @@ export const AppProvider = ({ children }) => {
     let eventSource = null;
     try {
       const sseUrl = `/api/turfs/stream?city=${encodeURIComponent(selectedCity)}${authToken ? `&token=${encodeURIComponent(authToken)}` : ''}`;
-      eventSource = new EventSource(sseUrl);
+      eventSource = new EventSource(apiUrl(sseUrl));
 
       eventSource.addEventListener('TURF_CREATED', (e) => {
         try {
@@ -391,9 +416,9 @@ export const AppProvider = ({ children }) => {
 
     let socket = null;
     try {
-      socket = io('/', {
+      socket = io(API_BASE_URL || '/', {
         withCredentials: true,
-        auth: { token: authToken }
+        auth: { token: authToken || localStorage.getItem('playmate_token') }
       });
 
       socket.on('new_notification', (notif) => {
@@ -483,13 +508,9 @@ export const AppProvider = ({ children }) => {
 
     // Persist to shared backend database
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      const res = await fetch('/api/matches', {
+      const res = await fetch(apiUrl('/api/matches'), {
         method: 'POST',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(newMatch)
       });
@@ -556,9 +577,9 @@ export const AppProvider = ({ children }) => {
 
   const joinMatch = async (matchId) => {
     try {
-      const res = await fetch(`/api/matches/${matchId}/join`, {
+      const res = await fetch(apiUrl(`/api/matches/${matchId}/join`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include'
       });
       const data = await res.json();
@@ -610,9 +631,9 @@ export const AppProvider = ({ children }) => {
 
   const leaveMatch = async (matchId) => {
     try {
-      const res = await fetch(`/api/matches/${matchId}/leave`, {
+      const res = await fetch(apiUrl(`/api/matches/${matchId}/leave`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include'
       });
       const data = await res.json();
@@ -650,14 +671,9 @@ export const AppProvider = ({ children }) => {
   // Ground Bookings Actions (Connected to Shared Backend Database & Concurrency Protection)
   const createBooking = async (bookingPayload) => {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch('/api/bookings', {
+      const res = await fetch(apiUrl('/api/bookings'), {
         method: 'POST',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(bookingPayload)
       });
@@ -707,15 +723,10 @@ export const AppProvider = ({ children }) => {
 
   const cancelBooking = async (bookingId) => {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
+      const res = await fetch(apiUrl(`/api/bookings/${bookingId}/cancel`), {
         method: 'PUT',
         credentials: 'include',
-        headers
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' })
       });
 
       const data = await res.json();
@@ -752,15 +763,10 @@ export const AppProvider = ({ children }) => {
 
   const rescheduleBooking = async (bookingId, newDate, newTimeSlot, newSlotId) => {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch(`/api/bookings/${bookingId}/reschedule`, {
+      const res = await fetch(apiUrl(`/api/bookings/${bookingId}/reschedule`), {
         method: 'PUT',
         credentials: 'include',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ newDate, newTimeSlot, newSlotId })
       });
 
@@ -792,9 +798,9 @@ export const AppProvider = ({ children }) => {
     const matchId = chatId.startsWith('chat_') ? chatId.replace('chat_', '') : chatId;
 
     try {
-      const res = await fetch(`/api/chats/${matchId}`, {
+      const res = await fetch(apiUrl(`/api/chats/${matchId}`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify({ text: text.trim() })
       });
@@ -844,9 +850,10 @@ export const AppProvider = ({ children }) => {
   // Notifications Actions
   const markAllNotificationsRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', {
+      await fetch(apiUrl('/api/notifications/read-all'), {
         method: 'PUT',
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
     } catch {}
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
@@ -855,9 +862,10 @@ export const AppProvider = ({ children }) => {
 
   const dismissNotification = async (id) => {
     try {
-      await fetch(`/api/notifications/${id}`, {
+      await fetch(apiUrl(`/api/notifications/${id}`), {
         method: 'DELETE',
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
       });
     } catch {}
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -866,9 +874,9 @@ export const AppProvider = ({ children }) => {
   // User Profile
   const updateProfile = async (updatedFields) => {
     try {
-      const res = await fetch('/api/users/profile', {
+      const res = await fetch(apiUrl('/api/users/profile'), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
         body: JSON.stringify(updatedFields)
       });
@@ -900,15 +908,10 @@ export const AppProvider = ({ children }) => {
   // Turf Owner Actions
   const acceptOwnerBooking = async (bookingId) => {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch(`/api/bookings/${bookingId}/status`, {
+      const res = await fetch(apiUrl(`/api/bookings/${bookingId}/status`), {
         method: 'PUT',
         credentials: 'include',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: 'confirmed' })
       });
       if (res.ok) {
@@ -926,15 +929,10 @@ export const AppProvider = ({ children }) => {
 
   const rejectOwnerBooking = async (bookingId) => {
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch(`/api/bookings/${bookingId}/status`, {
+      const res = await fetch(apiUrl(`/api/bookings/${bookingId}/status`), {
         method: 'PUT',
         credentials: 'include',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: 'rejected' })
       });
       if (res.ok) {
@@ -958,15 +956,10 @@ export const AppProvider = ({ children }) => {
     };
 
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const res = await fetch('/api/turfs', {
+      const res = await fetch(apiUrl('/api/turfs'), {
         method: 'POST',
         credentials: 'include',
-        headers,
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
 

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Logo } from '../components/common/Logo';
+import { apiUrl } from '../config/api';
 
 export const AuthCallbackPage = () => {
   const [searchParams] = useSearchParams();
@@ -20,11 +21,24 @@ export const AuthCallbackPage = () => {
         return;
       }
 
+      const callbackToken = searchParams.get('token');
+      if (callbackToken) {
+        localStorage.setItem('playmate_token', callbackToken);
+      }
+      const token = callbackToken || localStorage.getItem('playmate_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const res = await fetch(apiUrl('/api/auth/me'), {
+          credentials: 'include',
+          headers
+        });
         if (res.ok && active) {
           const data = await res.json();
           const user = data.user || data;
+          if (data.token) {
+            localStorage.setItem('playmate_token', data.token);
+          }
           const role = user.role || searchParams.get('role') || 'player';
           const targetPath = role === 'turf_owner' || role === 'owner' ? '/owner' : '/player';
           showToast(

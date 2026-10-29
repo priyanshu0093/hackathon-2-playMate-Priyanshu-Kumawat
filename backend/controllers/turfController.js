@@ -236,6 +236,11 @@ export const createTurf = async (req, res, next) => {
 
     const defaultSlots = generateDailySlots(openH, closeH, price);
 
+    const normalizeAmenities = (raw) => {
+      if (!Array.isArray(raw)) return ['High-Power Floodlights', 'Free Parking'];
+      return raw.map(a => typeof a === 'object' && a !== null ? (a.name || a.label || JSON.stringify(a)) : String(a));
+    };
+
     const newTurf = await prisma.turfProfile.create({
       data: {
         ownerId: req.user.id,
@@ -246,7 +251,7 @@ export const createTurf = async (req, res, next) => {
         hourlyRate: price,
         city: (city || req.user.city || 'Bangalore').trim(),
         address: (address || location || 'Main Road').trim(),
-        amenities: Array.isArray(amenities) ? amenities : ['High-Power Floodlights', 'Free Parking'],
+        amenities: normalizeAmenities(amenities),
         images: Array.isArray(images || gallery) && (images || gallery).length ? (images || gallery) : [
           'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80'
         ],
@@ -312,7 +317,9 @@ export const updateTurf = async (req, res, next) => {
     if (hourlyRate) data.hourlyRate = Number(hourlyRate);
     if (city) data.city = city.trim();
     if (address) data.address = address.trim();
-    if (amenities && Array.isArray(amenities)) data.amenities = amenities;
+    if (amenities && Array.isArray(amenities)) {
+      data.amenities = amenities.map(a => typeof a === 'object' && a !== null ? (a.name || a.label || JSON.stringify(a)) : String(a));
+    }
     if (images && Array.isArray(images)) data.images = images;
     if (openingHour) data.openingHour = openingHour;
     if (closingHour) data.closingHour = closingHour;

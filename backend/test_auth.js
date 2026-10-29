@@ -153,7 +153,7 @@ const runTests = async () => {
     ownerCookie = ownerCookieHeader ? ownerCookieHeader.split(';')[0] : '';
 
     // Verify TurfProfile created for owner
-    const createdProfile = await TurfProfile.findOne({ owner: res7.data.user.id });
+    const createdProfile = await prisma.turfProfile.findFirst({ where: { ownerId: res7.data.user.id } });
     assert(!!createdProfile, 'TurfProfile document initialized for new turf_owner');
 
     // 8. Login: Non-existent account

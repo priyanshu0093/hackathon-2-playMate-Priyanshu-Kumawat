@@ -27,6 +27,7 @@ import { Modal } from '../common/Modal';
 import { StatusBadge } from '../common/Badge';
 import { ImageWithFallback } from '../common/ImageWithFallback';
 import { CITY_OPTIONS } from '../../utils/cityUtils';
+import { apiUrl } from '../../config/api';
 
 export const TurfOwnerDashboard = () => {
   const {
@@ -64,7 +65,12 @@ export const TurfOwnerDashboard = () => {
     let active = true;
     const fetchOwnerStats = async () => {
       try {
-        const res = await fetch('/api/turfs/owner/stats', { credentials: 'include' });
+        const token = localStorage.getItem('playmate_token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(apiUrl('/api/turfs/owner/stats'), {
+          credentials: 'include',
+          headers
+        });
         if (res.ok && active) {
           const data = await res.json();
           setLiveOwnerStats(data);
@@ -84,9 +90,14 @@ export const TurfOwnerDashboard = () => {
 
     try {
       const endpoint = isCurrentlyBlocked ? `/api/turfs/${primaryTurfId}/unblock-slot` : `/api/turfs/${primaryTurfId}/block-slot`;
-      await fetch(endpoint, {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      await fetch(apiUrl(endpoint), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           date: 'Today',

@@ -425,7 +425,7 @@ export const handleGoogleCallback = async (req, res, next) => {
       const token = signToken(user);
       setAuthCookie(res, token);
       const targetRole = user.role === 'turf_owner' ? 'owner' : 'player';
-      return res.redirect(`${clientBaseUrl}/auth/callback?role=${targetRole}`);
+      return res.redirect(`${clientBaseUrl}/auth/callback?role=${targetRole}&token=${token}`);
     }
 
     // Rule B: If no account with this googleId, check if account exists with this email
@@ -482,7 +482,7 @@ export const handleGoogleCallback = async (req, res, next) => {
     const token = signToken(user);
     setAuthCookie(res, token);
     const targetRole = user.role === 'turf_owner' ? 'owner' : 'player';
-    return res.redirect(`${clientBaseUrl}/auth/callback?role=${targetRole}`);
+    return res.redirect(`${clientBaseUrl}/auth/callback?role=${targetRole}&token=${token}`);
   } catch (error) {
     console.error('[Google Callback Internal Error]:', error);
     return res.redirect(`${clientBaseUrl}/login?error=internal_oauth_error`);

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/Badge';
+import { apiUrl } from '../../config/api';
 import { Modal } from '../common/Modal';
 import { ImageWithFallback } from '../common/ImageWithFallback';
 
@@ -101,9 +102,14 @@ export const MatchDetails = () => {
   const handleBalanceTeams = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/matches/${match.id}/teams/balance`, {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      const res = await fetch(apiUrl(`/api/matches/${match.id}/teams/balance`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include'
       });
       const data = await res.json();
@@ -123,9 +129,14 @@ export const MatchDetails = () => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/matches/${match.id}/complete`, {
+      const token = localStorage.getItem('playmate_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      const res = await fetch(apiUrl(`/api/matches/${match.id}/complete`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           teamAScore,

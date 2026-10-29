@@ -20,6 +20,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Logo } from '../components/common/Logo';
 import { GoogleIcon } from '../components/common/GoogleIcon';
+import { apiUrl } from '../config/api';
 
 export const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -88,6 +89,8 @@ export const LoginPage = () => {
       setServerError('Invalid response received from Google OAuth.');
     } else if (errorParam === 'google_verification_failed') {
       setServerError('Google authentication verification failed. Please try again.');
+    } else if (errorParam === 'internal_oauth_error') {
+      setServerError('Server error during Google sign-in. Please ensure backend and database connectivity or sign in using email & password.');
     } else if (errorParam) {
       setServerError(`Google authentication error: ${errorParam}`);
     }
@@ -100,7 +103,7 @@ export const LoginPage = () => {
     setServerSuccess('');
 
     try {
-      const statusRes = await fetch('/api/auth/google/status');
+      const statusRes = await fetch(apiUrl('/api/auth/google/status'));
       const statusData = await statusRes.json();
 
       if (!statusData.configured) {
@@ -114,7 +117,7 @@ export const LoginPage = () => {
 
       // Initiate Google OAuth with selected role
       const targetRole = activeRole === 'owner' ? 'turf_owner' : 'player';
-      window.location.href = `/api/auth/google?role=${targetRole}`;
+      window.location.href = apiUrl(`/api/auth/google?role=${targetRole}`);
     } catch {
       setIsGoogleLoading(false);
       setServerError('Unable to reach Google OAuth service. Please check server connectivity.');

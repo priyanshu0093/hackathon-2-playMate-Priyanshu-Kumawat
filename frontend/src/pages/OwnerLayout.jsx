@@ -5,9 +5,33 @@ import { Footer } from '../components/landing/Footer';
 import { useApp } from '../context/AppContext';
 
 export const OwnerLayout = () => {
-  const { authRole } = useApp();
+  const { authRole, authLoading, currentUser } = useApp();
 
-  if (authRole !== 'owner') {
+  // Show loading indicator while session is restoring
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F8FD]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#20B486] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-[#687587]">Verifying turf owner session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated -> redirect to login
+  if (!currentUser) {
+    return <Navigate to="/login?role=owner" replace />;
+  }
+
+  // Authenticated as Player -> block access and redirect to Player Panel
+  if (authRole === 'player') {
+    return <Navigate to="/player" replace />;
+  }
+
+  // Verify turf_owner or owner role
+  const isOwner = authRole === 'turf_owner' || authRole === 'owner';
+  if (!isOwner) {
     return <Navigate to="/login?role=owner" replace />;
   }
 

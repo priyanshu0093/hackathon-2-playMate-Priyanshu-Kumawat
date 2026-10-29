@@ -15,7 +15,8 @@ import {
   Sparkles,
   Info,
   Check,
-  X
+  X,
+  Navigation
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
@@ -50,6 +51,13 @@ export const GroundDetails = () => {
   }
 
   const galleryImages = ground.gallery && ground.gallery.length > 0 ? ground.gallery : [ground.heroImage];
+
+  // OpenStreetMap directions route URL
+  const userLat = 12.9716;
+  const userLng = 77.5946;
+  const destLat = ground.coordinates?.coordinates?.[1] || 12.9784;
+  const destLng = ground.coordinates?.coordinates?.[0] || 77.6408;
+  const directionsUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLat},${userLng};${destLat},${destLng}`;
 
   const dateTabs = [
     { label: 'Today, 28 Oct', sub: 'Today' },
@@ -118,6 +126,16 @@ export const GroundDetails = () => {
         </button>
 
         <div className="flex items-center gap-2">
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all"
+            title="Open directions in OpenStreetMap"
+          >
+            <Navigation className="w-3.5 h-3.5 text-[#2F80ED]" />
+            <span>Get Directions</span>
+          </a>
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#E6F8F2] text-[#20B486] flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" /> Verified PlayMate Turf
           </span>

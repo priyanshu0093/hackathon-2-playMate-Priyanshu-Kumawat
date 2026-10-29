@@ -41,7 +41,7 @@ export const FeaturedMatches = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featured.map((match) => {
-            const isJoined = match.roster?.some((p) => p.id === currentUser.id);
+            const isJoined = currentUser?.id && match.roster?.some((p) => p.id === currentUser.id);
 
             return (
               <motion.div

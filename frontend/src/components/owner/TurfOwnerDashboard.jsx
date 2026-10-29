@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
@@ -37,12 +37,86 @@ export const TurfOwnerDashboard = () => {
     bookings,
     addOwnerVenue,
     selectedCity,
-    logout
+    logout,
+    showToast
   } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'bookings' | 'calendar' | 'venues' | 'reviews'
-  const [addVenueModalOpen, setAddVenueModalOpen] = useState(false);
+  const tabParam = searchParams.get('tab');
+  const actionParam = searchParams.get('action');
+
+  const [activeTab, setActiveTab] = useState(tabParam || 'overview'); // 'overview' | 'bookings' | 'calendar' | 'venues' | 'reviews'
+  const [addVenueModalOpen, setAddVenueModalOpen] = useState(actionParam === 'add-venue');
+  const [liveOwnerStats, setLiveOwnerStats] = useState(null);
+
+  // Slot matrix state for blocking/unblocking
+  const [slotMatrix, setSlotMatrix] = useState([
+    { id: 's1', time: '06:00 AM - 07:30 AM', status: 'Available', player: '-' },
+    { id: 's2', time: '07:30 AM - 09:00 AM', status: 'Booked', player: 'Aditya Nair' },
+    { id: 's3', time: '05:00 PM - 06:30 PM', status: 'Available', player: '-' },
+    { id: 's4', time: '06:30 PM - 08:00 PM', status: 'Booked', player: 'Pooja Reddy' },
+    { id: 's5', time: '08:00 PM - 09:30 PM', status: 'Blocked', player: 'Maintenance' },
+    { id: 's6', time: '09:30 PM - 11:00 PM', status: 'Available', player: '-' }
+  ]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchOwnerStats = async () => {
+      try {
+        const res = await fetch('/api/turfs/owner/stats', { credentials: 'include' });
+        if (res.ok && active) {
+          const data = await res.json();
+          setLiveOwnerStats(data);
+        }
+      } catch {}
+    };
+    fetchOwnerStats();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleToggleBlockSlot = async (slot) => {
+    const primaryTurfId = grounds[0]?.id || 'ground_1';
+    const isCurrentlyBlocked = slot.status === 'Blocked';
+    const newStatus = isCurrentlyBlocked ? 'Available' : 'Blocked';
+
+    try {
+      const endpoint = isCurrentlyBlocked ? `/api/turfs/${primaryTurfId}/unblock-slot` : `/api/turfs/${primaryTurfId}/block-slot`;
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          date: 'Today',
+          slotId: slot.id,
+          reason: 'Maintenance & Turf Grooming'
+        })
+      });
+    } catch {}
+
+    setSlotMatrix((prev) =>
+      prev.map((s) =>
+        s.id === slot.id
+          ? { ...s, status: newStatus, player: newStatus === 'Blocked' ? 'Maintenance' : '-' }
+          : s
+      )
+    );
+    showToast(
+      newStatus === 'Blocked' ? 'Slot Blocked 🔒' : 'Slot Released ✅',
+      `Slot (${slot.time}) marked as ${newStatus.toLowerCase()}.`
+    );
+  };
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+    if (actionParam === 'add-venue') {
+      setAddVenueModalOpen(true);
+    }
+  }, [tabParam, actionParam]);
 
   // Combine shared live bookings from backend with owner statistics
   const displayBookings = [
@@ -437,36 +511,45 @@ export const TurfOwnerDashboard = () => {
             {['Turf A (FIFA Pro 7v7)', 'Turf B (Box Cricket)', 'Turf C (5v5 Fast Turf)'].map(
               (courtName, idx) => (
                 <div key={idx} className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#E5EDF7] space-y-3">
-                  <h4 className="text-xs font-bold text-[#172338] pb-2 border-b border-[#E5EDF7]">
-                    {courtName}
-                  </h4>
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E5EDF7]">
+                    <h4 className="text-xs font-bold text-[#172338]">
+                      {courtName}
+                    </h4>
+                    <span className="text-[10px] text-[#687587]">Tap slot to block/unblock</span>
+                  </div>
                   <div className="space-y-2">
-                    {[
-                      { time: '06:00 AM - 07:30 AM', status: 'Available', player: '-' },
-                      { time: '07:30 AM - 09:00 AM', status: 'Booked', player: 'Aditya Nair' },
-                      { time: '05:00 PM - 06:30 PM', status: 'Available', player: '-' },
-                      { time: '06:30 PM - 08:00 PM', status: 'Booked', player: 'Pooja Reddy' },
-                      { time: '08:00 PM - 09:30 PM', status: 'Booked', player: 'Rohan Sharma' },
-                      { time: '09:30 PM - 11:00 PM', status: 'Available', player: '-' }
-                    ].map((slot, sidx) => (
+                    {slotMatrix.map((slot) => (
                       <div
-                        key={sidx}
+                        key={slot.id}
                         className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
                           slot.status === 'Booked'
                             ? 'bg-blue-50/60 border-blue-200 text-[#172338]'
+                            : slot.status === 'Blocked'
+                            ? 'bg-slate-100 border-slate-300 text-slate-500'
                             : 'bg-white border-[#E5EDF7] text-[#687587]'
                         }`}
                       >
                         <span className="font-semibold">{slot.time}</span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            slot.status === 'Booked'
-                              ? 'bg-[#2F80ED] text-white'
-                              : 'bg-[#E6F8F2] text-[#20B486]'
-                          }`}
-                        >
-                          {slot.status === 'Booked' ? slot.player : 'Available'}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {slot.status === 'Booked' ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2F80ED] text-white">
+                              {slot.player}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleBlockSlot(slot)}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition-all ${
+                                slot.status === 'Blocked'
+                                  ? 'bg-slate-300 text-slate-700 hover:bg-slate-400'
+                                  : 'bg-[#E6F8F2] text-[#20B486] hover:bg-emerald-200'
+                              }`}
+                              title={slot.status === 'Blocked' ? 'Click to unblock slot' : 'Click to block slot for maintenance'}
+                            >
+                              {slot.status === 'Blocked' ? '🔒 Blocked' : '✓ Available'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

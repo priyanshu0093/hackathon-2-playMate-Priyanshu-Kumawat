@@ -2,75 +2,38 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   MapPin,
-  Bell,
-  MessageSquare,
   PlusCircle,
   Menu,
   X,
   Search,
   ChevronDown,
-  User,
-  ShieldCheck,
   Building2,
   Calendar,
-  Sun,
-  Moon,
-  LogOut,
-  LogIn
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ImageWithFallback } from './ImageWithFallback';
+import { Logo } from './Logo';
+import { ProfileMenu } from './ProfileMenu';
 import { CITY_OPTIONS } from '../../utils/cityUtils';
 
 export const Navbar = ({ variant = 'player' }) => {
   const {
-    currentUser,
-    unreadNotifsCount,
     selectedCity,
     setSelectedCity,
-    notifications,
-    markAllNotificationsRead,
-    theme,
-    toggleTheme,
-    logout,
     authRole
   } = useApp();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
-  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+
+  const cityRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const notifRef = useRef(null);
-  const cityRef = useRef(null);
-
-  // Close notification panel on outside click or Escape
-  useEffect(() => {
-    if (!notifDropdownOpen) return;
-
-    const handleOutsideClick = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setNotifDropdownOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setNotifDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('touchstart', handleOutsideClick);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('touchstart', handleOutsideClick);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [notifDropdownOpen]);
+  const isOwner = variant === 'owner' || authRole === 'owner' || authRole === 'turf_owner';
+  const isLanding = variant === 'landing' || location.pathname === '/';
 
   // Close city dropdown on outside click or Escape
   useEffect(() => {
@@ -99,55 +62,49 @@ export const Navbar = ({ variant = 'player' }) => {
     };
   }, [cityDropdownOpen]);
 
-  // Close any open popovers on route navigation
+  // Close mobile drawer on route navigation
   useEffect(() => {
-    setNotifDropdownOpen(false);
-    setCityDropdownOpen(false);
     setMobileMenuOpen(false);
+    setCityDropdownOpen(false);
   }, [location.pathname]);
 
   const cities = CITY_OPTIONS;
-
   const filteredCities = cities.filter((city) =>
     city.toLowerCase().includes(citySearch.toLowerCase())
   );
 
-  const isLanding = variant === 'landing' || location.pathname === '/';
-
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E5EDF7]">
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E5EDF7] dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
-          {/* Logo & City Selector */}
-          <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2F80ED] to-[#56CCF2] flex items-center justify-center text-white shadow-md shadow-[#2F80ED]/20 group-hover:scale-105 transition-transform duration-200">
-                <span className="font-extrabold text-xl tracking-tighter">PM</span>
-              </div>
-              <div>
-                <span className="font-extrabold text-xl tracking-tight text-[#172338] block leading-none">
-                  Play<span className="text-[#2F80ED]">Mate</span>
-                </span>
-                <span className="text-[10px] text-[#687587] font-medium tracking-wide">
-                  SPORTS MATCHMAKER
-                </span>
-              </div>
-            </Link>
+        <div className="flex items-center justify-between h-17">
+          {/* Left: Brand Logo & City Selector */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Logo
+              to={isLanding ? '/' : isOwner ? '/owner' : '/player'}
+              badge={isLanding ? null : isOwner ? 'OWNER' : 'PLAYER'}
+              showTagline={false}
+            />
 
             {/* City Selector */}
-            <div className="relative hidden md:block" ref={cityRef}>
+            <div className="relative hidden sm:block" ref={cityRef}>
               <button
+                type="button"
                 onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#F4F8FD] hover:bg-[#D9EAFE]/60 text-[#172338] border border-[#E5EDF7] transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#F4F8FD] dark:bg-slate-800 hover:bg-[#D9EAFE]/60 dark:hover:bg-slate-700/80 text-[#172338] dark:text-slate-200 border border-[#E5EDF7] dark:border-slate-700 transition-all focus:outline-none"
+                aria-label="Select City"
               >
-                <MapPin className="w-3.5 h-3.5 text-[#2F80ED]" />
-                <span>{selectedCity}</span>
-                <ChevronDown className="w-3 h-3 text-[#687587]" />
+                <MapPin className="w-3.5 h-3.5 text-[#2F80ED] shrink-0" />
+                <span className="truncate max-w-[110px]">{selectedCity}</span>
+                <ChevronDown
+                  className={`w-3 h-3 text-[#687587] dark:text-slate-400 transition-transform duration-200 ${
+                    cityDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {cityDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-[#E5EDF7] py-2 z-50 overflow-hidden">
-                  <div className="px-3 pb-2 border-b border-[#E5EDF7]">
+                <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-[#E5EDF7] dark:border-slate-800 py-2 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 pb-2 border-b border-[#E5EDF7] dark:border-slate-800">
                     <div className="relative">
                       <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                       <input
@@ -155,7 +112,7 @@ export const Navbar = ({ variant = 'player' }) => {
                         placeholder="Search city..."
                         value={citySearch}
                         onChange={(e) => setCitySearch(e.target.value)}
-                        className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-[#F4F8FD] rounded-xl border border-[#E5EDF7] focus:outline-none focus:border-[#2F80ED] text-[#172338]"
+                        className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-[#F4F8FD] dark:bg-slate-800 rounded-xl border border-[#E5EDF7] dark:border-slate-700 focus:outline-none focus:border-[#2F80ED] text-[#172338] dark:text-white"
                         autoFocus
                       />
                     </div>
@@ -166,20 +123,21 @@ export const Navbar = ({ variant = 'player' }) => {
                       filteredCities.map((city) => (
                         <button
                           key={city}
+                          type="button"
                           onClick={() => {
                             setSelectedCity(city);
                             setCitySearch('');
                             setCityDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between hover:bg-[#F4F8FD] transition-colors ${
+                          className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between hover:bg-[#F4F8FD] dark:hover:bg-slate-800 transition-colors ${
                             selectedCity === city
-                              ? 'font-bold text-[#2F80ED] bg-[#D9EAFE]/30'
-                              : 'text-[#172338]'
+                              ? 'font-bold text-[#2F80ED] dark:text-[#60A5FA] bg-[#D9EAFE]/30 dark:bg-slate-800'
+                              : 'text-[#172338] dark:text-slate-200'
                           }`}
                         >
                           <span>{city}</span>
                           {selectedCity === city && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#2F80ED]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#2F80ED] dark:bg-[#60A5FA]" />
                           )}
                         </button>
                       ))
@@ -194,9 +152,9 @@ export const Navbar = ({ variant = 'player' }) => {
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Center: Clean Role-Specific Navigation */}
           {isLanding ? (
-            <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#687587]">
+            <nav className="hidden md:flex items-center gap-7 text-xs font-bold text-[#687587] dark:text-slate-300">
               <a href="#how-it-works" className="hover:text-[#2F80ED] transition-colors">
                 How It Works
               </a>
@@ -207,17 +165,63 @@ export const Navbar = ({ variant = 'player' }) => {
                 Matches
               </a>
               <a href="#popular-grounds" className="hover:text-[#2F80ED] transition-colors">
-                Grounds
+                Venues & Turfs
               </a>
             </nav>
+          ) : isOwner ? (
+            /* Turf Owner Navigation */
+            <nav className="hidden md:flex items-center gap-1.5 text-xs font-bold">
+              <NavLink
+                to="/owner"
+                end
+                className={({ isActive }) =>
+                  `px-3.5 py-2 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
+                  }`
+                }
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/owner?tab=bookings"
+                className={() => {
+                  const isBookings = location.pathname === '/owner' && location.search.includes('tab=bookings');
+                  return `px-3.5 py-2 rounded-xl transition-all ${
+                    isBookings
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
+                  }`;
+                }}
+              >
+                Schedule & Bookings
+              </NavLink>
+              <NavLink
+                to="/owner?tab=venues"
+                className={() => {
+                  const isVenues = location.pathname === '/owner' && location.search.includes('tab=venues');
+                  return `px-3.5 py-2 rounded-xl transition-all ${
+                    isVenues
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
+                  }`;
+                }}
+              >
+                My Venues
+              </NavLink>
+            </nav>
           ) : (
-            <nav className="hidden md:flex items-center gap-1.5 text-sm font-medium">
+            /* Player Navigation */
+            <nav className="hidden md:flex items-center gap-1.5 text-xs font-bold">
               <NavLink
                 to="/player"
                 end
                 className={({ isActive }) =>
                   `px-3.5 py-2 rounded-xl transition-all ${
-                    isActive ? 'bg-[#D9EAFE] text-[#2F80ED] font-semibold' : 'text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD]'
+                    isActive
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
                   }`
                 }
               >
@@ -227,7 +231,9 @@ export const Navbar = ({ variant = 'player' }) => {
                 to="/player/matches"
                 className={({ isActive }) =>
                   `px-3.5 py-2 rounded-xl transition-all ${
-                    isActive ? 'bg-[#D9EAFE] text-[#2F80ED] font-semibold' : 'text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD]'
+                    isActive
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
                   }`
                 }
               >
@@ -237,203 +243,94 @@ export const Navbar = ({ variant = 'player' }) => {
                 to="/player/grounds"
                 className={({ isActive }) =>
                   `px-3.5 py-2 rounded-xl transition-all ${
-                    isActive ? 'bg-[#D9EAFE] text-[#2F80ED] font-semibold' : 'text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD]'
+                    isActive
+                      ? 'bg-[#D9EAFE] text-[#2F80ED] dark:bg-slate-800 dark:text-[#60A5FA]'
+                      : 'text-[#687587] dark:text-slate-300 hover:text-[#172338] dark:hover:text-white hover:bg-[#F4F8FD] dark:hover:bg-slate-800/60'
                   }`
                 }
               >
                 Grounds & Turfs
               </NavLink>
-              <NavLink
-                to="/player/my-activity"
-                className={({ isActive }) =>
-                  `px-3.5 py-2 rounded-xl transition-all ${
-                    isActive ? 'bg-[#D9EAFE] text-[#2F80ED] font-semibold' : 'text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD]'
-                  }`
-                }
-              >
-                My Bookings
-              </NavLink>
             </nav>
           )}
 
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Dark Mode Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD] rounded-xl transition-colors"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle Dark Mode"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
-
+          {/* Right: Primary Action CTA & Unified Profile Menu */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {isLanding ? (
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link
                   to="/player/grounds"
-                  className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#172338] bg-[#F4F8FD] hover:bg-[#D9EAFE] rounded-xl transition-colors border border-[#E5EDF7]"
+                  className="hidden sm:inline-flex px-3.5 py-2 text-xs font-bold text-[#172338] dark:text-slate-200 bg-[#F4F8FD] dark:bg-slate-800 hover:bg-[#D9EAFE] rounded-xl transition-colors border border-[#E5EDF7] dark:border-slate-700"
                 >
                   Explore Grounds
                 </Link>
                 <Link
                   to="/login"
-                  className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#172338] hover:text-[#2F80ED] transition-colors"
+                  className="px-3.5 py-2 text-xs font-bold text-[#172338] dark:text-slate-200 hover:text-[#2F80ED] transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/player"
-                  className="px-4.5 py-2 text-xs sm:text-sm font-semibold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-md shadow-[#2F80ED]/25 transition-all duration-200"
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-md shadow-[#2F80ED]/25 transition-all duration-200 flex items-center gap-1.5"
                 >
-                  Enter Player App
+                  <span>Launch App</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             ) : (
-              <div className="flex items-center gap-2 sm:gap-2.5">
-                {/* Create Match CTA (Player only) */}
-                {variant !== 'owner' && (
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                {/* Primary Action Button */}
+                {isOwner ? (
                   <Link
-                    to="/player/create-match"
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-sm transition-all"
+                    to="/owner?action=add-venue"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#20B486] hover:bg-[#1CA077] rounded-xl shadow-sm transition-all"
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>Create Match</span>
+                    <span className="hidden sm:inline">Add Venue</span>
+                    <span className="sm:hidden">Add</span>
                   </Link>
-                )}
-
-                {/* Notifications Bell */}
-                <div className="relative" ref={notifRef}>
-                  <button
-                    onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
-                    className="relative p-2 text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD] rounded-xl transition-colors"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="w-5 h-5" />
-                    {unreadNotifsCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#EB5757] text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                        {unreadNotifsCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Notifications Popover */}
-                  {notifDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-[#E5EDF7] p-3 z-50">
-                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E5EDF7]">
-                        <span className="font-bold text-sm text-[#172338]">Notifications</span>
-                        {unreadNotifsCount > 0 && (
-                          <button
-                            onClick={markAllNotificationsRead}
-                            className="text-xs text-[#2F80ED] hover:underline font-medium"
-                          >
-                            Mark all as read
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 max-h-72 overflow-y-auto">
-                        {notifications.slice(0, 4).map((n) => (
-                          <Link
-                            key={n.id}
-                            to={n.actionLink || '/player/my-activity'}
-                            onClick={() => setNotifDropdownOpen(false)}
-                            className={`block p-2.5 rounded-xl text-left transition-colors ${
-                              n.unread ? 'bg-[#D9EAFE]/30 border-l-4 border-[#2F80ED]' : 'hover:bg-[#F4F8FD]'
-                            }`}
-                          >
-                            <p className="text-xs font-semibold text-[#172338]">{n.title}</p>
-                            <p className="text-[11px] text-[#687587] line-clamp-2 mt-0.5">{n.message}</p>
-                            <span className="text-[10px] text-slate-400 mt-1 block">{n.time}</span>
-                          </Link>
-                        ))}
-                      </div>
-
-                      <div className="pt-2 mt-2 border-t border-[#E5EDF7] text-center">
-                        <Link
-                          to="/player/chat"
-                          onClick={() => setNotifDropdownOpen(false)}
-                          className="text-xs font-semibold text-[#2F80ED] hover:underline"
-                        >
-                          View Activity & Chat →
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Match Chat shortcut (Player only) */}
-                {variant !== 'owner' && (
+                ) : (
                   <Link
-                    to="/player/chat"
-                    className="p-2 text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD] rounded-xl transition-colors relative"
-                    aria-label="Match Chat"
+                    to="/player/create-match"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] rounded-xl shadow-sm shadow-[#2F80ED]/20 transition-all"
                   >
-                    <MessageSquare className="w-5 h-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#20B486]" />
+                    <PlusCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Create Match</span>
+                    <span className="sm:hidden">Host</span>
                   </Link>
                 )}
 
-                {/* Profile Pill */}
-                <Link
-                  to="/player/profile"
-                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full hover:bg-[#F4F8FD] border border-transparent hover:border-[#E5EDF7] transition-all"
-                >
-                  <ImageWithFallback
-                    src={currentUser.avatar}
-                    alt={currentUser.name}
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2F80ED]/30"
-                  />
-                  <div className="hidden lg:block text-left">
-                    <span className="block text-xs font-bold text-[#172338] leading-tight">
-                      {currentUser.name.split(' ')[0]}
-                    </span>
-                    <span className="block text-[10px] text-[#20B486] font-medium leading-tight">
-                      ★ {currentUser.rating}
-                    </span>
-                  </div>
-                </Link>
-
-                {/* Logout Button */}
-                <button
-                  onClick={() => logout(navigate)}
-                  className="p-2 text-[#687587] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                  title="Sign Out"
-                  aria-label="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+                {/* Profile Menu: houses dark-mode, notifications, support chatbot, history & logout */}
+                <ProfileMenu role={isOwner ? 'owner' : 'player'} />
               </div>
             )}
 
-            {/* Mobile menu hamburger toggle */}
+            {/* Mobile Hamburger Button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-[#687587] hover:text-[#172338] rounded-xl hover:bg-[#F4F8FD]"
-              aria-label="Toggle Navigation"
+              className="md:hidden p-2 text-[#687587] dark:text-slate-400 hover:text-[#172338] dark:hover:text-white rounded-xl hover:bg-[#F4F8FD] dark:hover:bg-slate-800 transition-colors"
+              aria-label="Toggle Mobile Menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-[#E5EDF7] px-4 pt-3 pb-6 space-y-3">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E5EDF7]">
-            <span className="text-xs text-[#687587] font-medium">Selected City:</span>
+        <div className="md:hidden bg-white dark:bg-slate-900 border-b border-[#E5EDF7] dark:border-slate-800 px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E5EDF7] dark:border-slate-800">
+            <span className="text-xs text-[#687587] dark:text-slate-400 font-bold">Selected City:</span>
             <select
               value={selectedCity}
               onChange={(e) => {
                 setSelectedCity(e.target.value);
                 setMobileMenuOpen(false);
               }}
-              className="text-xs font-bold text-[#2F80ED] bg-[#F4F8FD] border border-[#E5EDF7] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#2F80ED]"
+              className="text-xs font-bold text-[#2F80ED] bg-[#F4F8FD] dark:bg-slate-800 border border-[#E5EDF7] dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none"
             >
               {cities.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -441,83 +338,107 @@ export const Navbar = ({ variant = 'player' }) => {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <Link
-              to="/player"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/player/matches"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              Find Matches
-            </Link>
-            <Link
-              to="/player/grounds"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              Grounds & Turfs
-            </Link>
-            <Link
-              to="/player/create-match"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#2F80ED] bg-[#D9EAFE]/40"
-            >
-              + Create a Match
-            </Link>
-            <Link
-              to="/player/my-activity"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              My Bookings & Activity
-            </Link>
-            <Link
-              to="/player/chat"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              Match Chat Rooms
-            </Link>
-            <Link
-              to="/player/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#172338] hover:bg-[#F4F8FD]"
-            >
-              Player Profile
-            </Link>
-          </div>
-
-          <div className="pt-3 border-t border-[#E5EDF7] flex items-center justify-between text-xs font-medium text-[#687587]">
-            <Link to="/owner" onClick={() => setMobileMenuOpen(false)} className="hover:text-[#2F80ED] font-semibold">
-              Turf Owner Panel
-            </Link>
-
-            {authRole ? (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  logout(navigate);
-                }}
-                className="flex items-center gap-1.5 text-red-500 font-bold hover:text-red-700"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Log Out</span>
-              </button>
+          <div className="space-y-1 text-xs font-semibold">
+            {isLanding ? (
+              <>
+                <a
+                  href="#how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  How It Works
+                </a>
+                <a
+                  href="#sports"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Sports Categories
+                </a>
+                <Link
+                  to="/player/grounds"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Explore Grounds
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#2F80ED] bg-[#D9EAFE]/40"
+                >
+                  Sign In to PlayMate
+                </Link>
+              </>
+            ) : isOwner ? (
+              <>
+                <Link
+                  to="/owner"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Owner Dashboard
+                </Link>
+                <Link
+                  to="/owner?tab=bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Schedule & Bookings
+                </Link>
+                <Link
+                  to="/owner?tab=venues"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  My Venues
+                </Link>
+                <Link
+                  to="/owner?action=add-venue"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#20B486] bg-[#20B486]/10 font-bold"
+                >
+                  + Add New Venue
+                </Link>
+              </>
             ) : (
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-1.5 text-[#2F80ED] font-bold"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
-              </Link>
+              <>
+                <Link
+                  to="/player"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Player Dashboard
+                </Link>
+                <Link
+                  to="/player/matches"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Find Matches
+                </Link>
+                <Link
+                  to="/player/grounds"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  Grounds & Turfs
+                </Link>
+                <Link
+                  to="/player/create-match"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#2F80ED] bg-[#D9EAFE]/40 dark:bg-[#2F80ED]/20 font-bold"
+                >
+                  + Create Match
+                </Link>
+                <Link
+                  to="/player/my-activity"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-[#172338] dark:text-slate-200 hover:bg-[#F4F8FD] dark:hover:bg-slate-800"
+                >
+                  My Bookings & Activity
+                </Link>
+              </>
             )}
           </div>
         </div>

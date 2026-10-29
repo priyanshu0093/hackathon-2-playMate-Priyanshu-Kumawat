@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import {
   INITIAL_MATCHES,
   INITIAL_GROUNDS,
@@ -24,7 +25,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const [currentUser, setCurrentUser] = useState(() => loadState('user', CURRENT_USER));
   const [matches, setMatches] = useState(INITIAL_MATCHES);
   const [grounds, setGrounds] = useState(INITIAL_GROUNDS);
   const [bookings, setBookings] = useState(() => loadState('bookings', INITIAL_BOOKINGS));
@@ -44,9 +44,11 @@ export const AppProvider = ({ children }) => {
 
   const [toast, setToast] = useState(null);
 
-  // Server-Verified Authentication Token & Session State
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem('playmate_token') || null);
-  const [authRole, setAuthRole] = useState(() => localStorage.getItem('playmate_auth_role') || 'player');
+  // Authentication State - Verified via HTTP-Only Cookies (never stored in localStorage)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authRole, setAuthRole] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Dark Mode Theme State
   const [theme, setTheme] = useState(() => localStorage.getItem('playmate_theme') || 'light');
@@ -64,51 +66,44 @@ export const AppProvider = ({ children }) => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Verify stored session on mount or authenticate default demo account
+  // Restore authenticated session on mount from secure HTTP-Only cookie
   useEffect(() => {
     let active = true;
-    const verifyOrInitSession = async () => {
-      const storedToken = localStorage.getItem('playmate_token');
-      if (storedToken) {
-        try {
-          const res = await fetch('/api/auth/me', {
-            headers: { Authorization: `Bearer ${storedToken}` }
-          });
-          if (res.ok && active) {
-            const user = await res.json();
-            setCurrentUser(user);
-            setAuthRole(user.role);
-            setAuthToken(storedToken);
-            return;
-          }
-        } catch {
-          // Fall through to auto-login
-        }
-      }
 
-      // If no valid server token, log in with demo account to ensure valid session
-      const targetRole = localStorage.getItem('playmate_auth_role') || 'player';
-      const demoEmail = targetRole === 'owner' ? 'sunil@kickoffarena.com' : 'alex.morgan@playmate.io';
+    // Clean up any legacy sensitive token in localStorage per security requirement
+    localStorage.removeItem('playmate_token');
+
+    const verifySession = async () => {
       try {
-        const loginRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: demoEmail, password: 'playmate123' })
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include'
         });
-        if (loginRes.ok && active) {
-          const data = await loginRes.json();
-          setAuthToken(data.token);
-          localStorage.setItem('playmate_token', data.token);
-          setCurrentUser(data.user);
-          setAuthRole(data.user.role);
-          localStorage.setItem('playmate_auth_role', data.user.role);
+
+        if (res.ok && active) {
+          const data = await res.json();
+          const user = data.user || data;
+          setCurrentUser(user);
+          setAuthRole(user.role);
+          setAuthToken(data.token || null);
+        } else if (active) {
+          setCurrentUser(null);
+          setAuthRole(null);
+          setAuthToken(null);
         }
       } catch (err) {
-        console.warn('[PlayMate Auth Init] Could not reach auth server:', err.message);
+        if (active) {
+          setCurrentUser(null);
+          setAuthRole(null);
+          setAuthToken(null);
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
       }
     };
 
-    verifyOrInitSession();
+    verifySession();
     return () => {
       active = false;
     };
@@ -123,8 +118,9 @@ export const AppProvider = ({ children }) => {
     let name = '';
 
     if (typeof roleOrCredentials === 'string') {
-      role = roleOrCredentials;
-      if (role === 'owner') {
+      const normalizedRole = roleOrCredentials === 'owner' ? 'turf_owner' : roleOrCredentials;
+      role = normalizedRole;
+      if (role === 'turf_owner' || role === 'owner') {
         email = 'sunil@kickoffarena.com';
         password = 'playmate123';
       } else {
@@ -134,7 +130,7 @@ export const AppProvider = ({ children }) => {
     } else if (roleOrCredentials && typeof roleOrCredentials === 'object') {
       email = roleOrCredentials.email || '';
       password = roleOrCredentials.password || '';
-      role = roleOrCredentials.role || 'player';
+      role = roleOrCredentials.role === 'owner' ? 'turf_owner' : (roleOrCredentials.role || 'player');
       isSignUp = !!roleOrCredentials.isSignUp;
       name = roleOrCredentials.name || '';
     }
@@ -142,60 +138,72 @@ export const AppProvider = ({ children }) => {
     try {
       const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
       const body = isSignUp
-        ? { email, password, name: name || (role === 'owner' ? 'Turf Owner' : 'Player'), role, city: selectedCity }
-        : { email, password };
+        ? {
+            email: email.trim(),
+            password,
+            name: name.trim() || (role === 'turf_owner' || role === 'owner' ? 'Turf Owner' : 'Player'),
+            role,
+            city: selectedCity
+          }
+        : { email: email.trim(), password };
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body)
       });
 
       const data = await res.json();
       if (!res.ok) {
-        showToast('Authentication Failed', data.error || 'Server rejected credentials.', 'error');
-        return { error: data.error };
+        const errorMsg = data.error || 'Server rejected credentials.';
+        showToast('Authentication Failed', errorMsg, 'error');
+        return { success: false, error: errorMsg };
       }
 
-      const verifiedToken = data.token;
-      const verifiedUser = data.user;
+      const verifiedUser = data.user || data;
       const verifiedRole = verifiedUser.role || role;
 
-      setAuthToken(verifiedToken);
-      localStorage.setItem('playmate_token', verifiedToken);
       setCurrentUser(verifiedUser);
-      localStorage.setItem('playmate_user', JSON.stringify(verifiedUser));
       setAuthRole(verifiedRole);
-      localStorage.setItem('playmate_auth_role', verifiedRole);
+      setAuthToken(data.token || null);
 
       showToast(
         isSignUp ? 'Account Created! 🏆' : 'Welcome to PlayMate! 🏆',
-        `Logged in successfully as ${verifiedRole === 'owner' ? 'Turf Owner' : 'Player'}.`
+        `Logged in successfully as ${verifiedRole === 'turf_owner' || verifiedRole === 'owner' ? 'Turf Owner' : 'Player'}.`
       );
 
+      const targetPath = (verifiedRole === 'turf_owner' || verifiedRole === 'owner') ? '/owner' : '/player';
       if (navigate) {
-        navigate(verifiedRole === 'owner' ? '/owner' : '/player');
+        navigate(targetPath);
       }
-      return { success: true, user: verifiedUser, token: verifiedToken };
+      return { success: true, user: verifiedUser, redirectUrl: targetPath };
     } catch (err) {
       console.error('[Auth Error]:', err);
-      // Fallback
-      setAuthRole(role);
-      localStorage.setItem('playmate_auth_role', role);
-      showToast('Welcome to PlayMate! 🏆', `Logged in as ${role === 'owner' ? 'Turf Owner' : 'Player'}.`);
-      if (navigate) {
-        navigate(role === 'owner' ? '/owner' : '/player');
-      }
-      return { success: true };
+      const msg = 'Could not connect to authentication server. Please check your connection.';
+      showToast('Connection Error', msg, 'error');
+      return { success: false, error: msg };
     }
   };
 
-  const logout = (navigate) => {
+  const logout = async (navigate) => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.warn('[Logout]: Could not call backend logout:', err.message);
+    }
+
     setAuthToken(null);
-    localStorage.removeItem('playmate_token');
+    setCurrentUser(null);
     setAuthRole(null);
+    localStorage.removeItem('playmate_token');
+    localStorage.removeItem('playmate_user');
     localStorage.removeItem('playmate_auth_role');
-    showToast('Logged Out', 'You have been returned to login.', 'info');
+
+    showToast('Logged Out', 'You have been safely signed out.', 'info');
     if (navigate) {
       navigate('/login');
     }
@@ -214,22 +222,27 @@ export const AppProvider = ({ children }) => {
     const loadBackendData = async () => {
       try {
         const promises = [
-          fetch(`/api/turfs?city=${encodeURIComponent(selectedCity)}`),
-          fetch(`/api/matches?city=${encodeURIComponent(selectedCity)}`)
+          fetch(`/api/turfs?city=${encodeURIComponent(selectedCity)}`, { credentials: 'include' }),
+          fetch(`/api/matches?city=${encodeURIComponent(selectedCity)}`, { credentials: 'include' })
         ];
 
-        // Fetch bookings using server-verified token only (no trusted client headers)
-        if (authToken) {
+        // Fetch bookings, notifications, and chats using server-verified session cookie or token
+        if (currentUser) {
           promises.push(
             fetch(`/api/bookings?city=${encodeURIComponent(selectedCity)}`, {
-              headers: {
-                'Authorization': `Bearer ${authToken}`
-              }
+              credentials: 'include',
+              headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
             })
+          );
+          promises.push(
+            fetch('/api/notifications', { credentials: 'include' })
+          );
+          promises.push(
+            fetch('/api/chats', { credentials: 'include' })
           );
         }
 
-        const [turfsRes, matchesRes, bookingsRes] = await Promise.all(promises);
+        const [turfsRes, matchesRes, bookingsRes, notifsRes, chatsRes] = await Promise.all(promises);
 
         if (turfsRes && turfsRes.ok && isMounted) {
           const turfsData = await turfsRes.json();
@@ -249,6 +262,20 @@ export const AppProvider = ({ children }) => {
           const bookingsData = await bookingsRes.json();
           if (Array.isArray(bookingsData)) {
             setBookings(bookingsData);
+          }
+        }
+
+        if (notifsRes && notifsRes.ok && isMounted) {
+          const notifsData = await notifsRes.json();
+          if (notifsData.notifications && Array.isArray(notifsData.notifications)) {
+            setNotifications(notifsData.notifications);
+          }
+        }
+
+        if (chatsRes && chatsRes.ok && isMounted) {
+          const chatsData = await chatsRes.json();
+          if (Array.isArray(chatsData) && chatsData.length > 0) {
+            setChats(chatsData);
           }
         }
       } catch (err) {
@@ -358,6 +385,47 @@ export const AppProvider = ({ children }) => {
     };
   }, [selectedCity, authRole, authToken]);
 
+  // Real-time Socket.IO connection for chat messages and instant notifications
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let socket = null;
+    try {
+      socket = io('/', {
+        withCredentials: true,
+        auth: { token: authToken }
+      });
+
+      socket.on('new_notification', (notif) => {
+        setNotifications((prev) => [notif, ...prev]);
+        showToast(notif.title || 'New Notification 🔔', notif.message, 'info');
+      });
+
+      socket.on('new_chat_message', ({ matchId, message }) => {
+        setChats((prev) =>
+          prev.map((c) => {
+            if (c.id === `chat_${matchId}` || c.matchId === matchId) {
+              if (c.messages.some((m) => m.id === message.id)) return c;
+              return {
+                ...c,
+                messages: [...c.messages, message]
+              };
+            }
+            return c;
+          })
+        );
+      });
+    } catch (err) {
+      console.warn('[Socket.IO]: could not connect:', err.message);
+    }
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [currentUser?.id, authToken]);
+
   useEffect(() => {
     localStorage.setItem('playmate_bookings', JSON.stringify(bookings));
   }, [bookings]);
@@ -394,19 +462,19 @@ export const AppProvider = ({ children }) => {
       city: matchData.city || selectedCity,
       ...matchData,
       host: {
-        id: currentUser.id,
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        rating: currentUser.rating,
+        id: currentUser?.id || 'usr_guest',
+        name: currentUser?.name || 'Host Player',
+        avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+        rating: currentUser?.rating || 5.0,
         verified: true
       },
       playersJoined: 1,
       status: 'Spots Available',
       roster: [
         {
-          id: currentUser.id,
-          name: `${currentUser.name} (Host)`,
-          avatar: currentUser.avatar,
+          id: currentUser?.id || 'usr_guest',
+          name: `${currentUser?.name || 'Host'} (Host)`,
+          avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
           role: 'Host',
           status: 'Host'
         }
@@ -422,6 +490,7 @@ export const AppProvider = ({ children }) => {
       const res = await fetch('/api/matches', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify(newMatch)
       });
       if (res.ok) {
@@ -447,9 +516,9 @@ export const AppProvider = ({ children }) => {
       messages: [
         {
           id: `msg_${Date.now()}`,
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          senderAvatar: currentUser.avatar,
+          senderId: currentUser?.id || 'usr_guest',
+          senderName: currentUser?.name || 'You',
+          senderAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
           text: `Welcome to ${newMatch.title}! Feel free to discuss match details, bibs, and timings here.`,
           time: 'Just now',
           isMe: true
@@ -485,75 +554,97 @@ export const AppProvider = ({ children }) => {
     return newMatch;
   };
 
-  const joinMatch = (matchId) => {
-    let joinedMatchTitle = '';
-    setMatches(prev =>
-      prev.map(m => {
-        if (m.id === matchId) {
-          joinedMatchTitle = m.title;
-          const isAlreadyJoined = m.roster?.some(p => p.id === currentUser.id);
-          if (isAlreadyJoined) return m;
+  const joinMatch = async (matchId) => {
+    try {
+      const res = await fetch(`/api/matches/${matchId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const updatedMatch = data.match;
+        setMatches(prev => prev.map(m => (m.id === matchId ? updatedMatch : m)));
+        showToast('Spot Confirmed! ⚽', data.message || 'You have joined the match roster!');
+        return { success: true, match: updatedMatch };
+      } else {
+        showToast('Unable to Join', data.error || 'Failed to join match.', 'error');
+        return { success: false, error: data.error };
+      }
+    } catch {
+      // Fallback local update
+      let joinedMatchTitle = '';
+      setMatches(prev =>
+        prev.map(m => {
+          if (m.id === matchId) {
+            joinedMatchTitle = m.title;
+            const isAlreadyJoined = m.roster?.some(p => p.id === currentUser?.id);
+            if (isAlreadyJoined) return m;
 
-          const newJoinedCount = (m.playersJoined || 0) + 1;
-          const newStatus = newJoinedCount >= m.totalSpots ? 'Full' : newJoinedCount >= m.totalSpots - 2 ? 'Almost Full' : 'Spots Available';
+            const newJoinedCount = (m.playersJoined || 0) + 1;
+            const newStatus = newJoinedCount >= m.totalSpots ? 'Full' : 'Spots Available';
 
-          return {
-            ...m,
-            playersJoined: newJoinedCount,
-            status: newStatus,
-            roster: [
-              ...(m.roster || []),
-              {
-                id: currentUser.id,
-                name: currentUser.name,
-                avatar: currentUser.avatar,
-                role: 'Player',
-                status: 'Confirmed'
-              }
-            ]
-          };
-        }
-        return m;
-      })
-    );
-
-    // Add notification
-    const newNotif = {
-      id: `notif_${Date.now()}`,
-      type: 'join_request',
-      title: 'You joined a match! ⚽',
-      message: `You successfully joined "${joinedMatchTitle}". Check your roster and chat.`,
-      time: 'Just now',
-      unread: true,
-      actionLink: `/player/matches/${matchId}`
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-
-    showToast('Spot Confirmed!', `You have joined "${joinedMatchTitle}". Get ready to play!`);
+            return {
+              ...m,
+              playersJoined: newJoinedCount,
+              status: newStatus,
+              roster: [
+                ...(m.roster || []),
+                {
+                  id: currentUser?.id,
+                  name: currentUser?.name,
+                  avatar: currentUser?.avatar,
+                  role: 'Player',
+                  status: 'Confirmed'
+                }
+              ]
+            };
+          }
+          return m;
+        })
+      );
+      showToast('Spot Confirmed!', `You have joined the match. Get ready to play!`);
+      return { success: true };
+    }
   };
 
-  const leaveMatch = (matchId) => {
-    let leftMatchTitle = '';
-    setMatches(prev =>
-      prev.map(m => {
-        if (m.id === matchId) {
-          leftMatchTitle = m.title;
-          const filteredRoster = (m.roster || []).filter(p => p.id !== currentUser.id);
-          const newJoinedCount = Math.max(0, (m.playersJoined || 1) - 1);
-          const newStatus = newJoinedCount >= m.totalSpots ? 'Full' : 'Spots Available';
-
-          return {
-            ...m,
-            playersJoined: newJoinedCount,
-            status: newStatus,
-            roster: filteredRoster
-          };
-        }
-        return m;
-      })
-    );
-
-    showToast('Left Match', `You have left "${leftMatchTitle}". Your spot has been freed.`, 'info');
+  const leaveMatch = async (matchId) => {
+    try {
+      const res = await fetch(`/api/matches/${matchId}/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const updatedMatch = data.match;
+        setMatches(prev => prev.map(m => (m.id === matchId ? updatedMatch : m)));
+        showToast('Left Match', data.message || 'Your spot has been freed.', 'info');
+        return { success: true, match: updatedMatch };
+      } else {
+        showToast('Unable to Leave', data.error || 'Failed to leave match.', 'error');
+        return { success: false, error: data.error };
+      }
+    } catch {
+      // Fallback local update
+      setMatches(prev =>
+        prev.map(m => {
+          if (m.id === matchId) {
+            const filteredRoster = (m.roster || []).filter(p => p.id !== currentUser?.id);
+            const newJoinedCount = Math.max(0, (m.playersJoined || 1) - 1);
+            return {
+              ...m,
+              playersJoined: newJoinedCount,
+              status: 'Spots Available',
+              roster: filteredRoster
+            };
+          }
+          return m;
+        })
+      );
+      showToast('Left Match', 'You have left the match. Your spot has been freed.', 'info');
+      return { success: true };
+    }
   };
 
   // Ground Bookings Actions (Connected to Shared Backend Database & Concurrency Protection)
@@ -567,6 +658,7 @@ export const AppProvider = ({ children }) => {
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify(bookingPayload)
       });
 
@@ -622,6 +714,7 @@ export const AppProvider = ({ children }) => {
 
       const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
         method: 'PUT',
+        credentials: 'include',
         headers
       });
 
@@ -666,6 +759,7 @@ export const AppProvider = ({ children }) => {
 
       const res = await fetch(`/api/bookings/${bookingId}/reschedule`, {
         method: 'PUT',
+        credentials: 'include',
         headers,
         body: JSON.stringify({ newDate, newTimeSlot, newSlotId })
       });
@@ -692,14 +786,43 @@ export const AppProvider = ({ children }) => {
   };
 
   // Chat Actions
-  const sendMessage = (chatId, text) => {
-    if (!text.trim()) return;
+  const sendMessage = async (chatId, text) => {
+    if (!text || !text.trim()) return;
+
+    const matchId = chatId.startsWith('chat_') ? chatId.replace('chat_', '') : chatId;
+
+    try {
+      const res = await fetch(`/api/chats/${matchId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ text: text.trim() })
+      });
+
+      if (res.ok) {
+        const newMsg = await res.json();
+        setChats(prev =>
+          prev.map(c => {
+            if (c.id === chatId || c.matchId === matchId) {
+              return {
+                ...c,
+                messages: [...c.messages, newMsg]
+              };
+            }
+            return c;
+          })
+        );
+        return;
+      }
+    } catch (err) {
+      console.warn('[Chat Error]:', err.message);
+    }
 
     const newMsg = {
       id: `msg_${Date.now()}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
+      senderId: currentUser?.id,
+      senderName: currentUser?.name || 'You',
+      senderAvatar: currentUser?.avatar,
       text: text.trim(),
       time: 'Just now',
       isMe: true
@@ -707,7 +830,7 @@ export const AppProvider = ({ children }) => {
 
     setChats(prev =>
       prev.map(c => {
-        if (c.id === chatId) {
+        if (c.id === chatId || c.matchId === matchId) {
           return {
             ...c,
             messages: [...c.messages, newMsg]
@@ -716,57 +839,62 @@ export const AppProvider = ({ children }) => {
         return c;
       })
     );
-
-    // Mock realistic reply after 1.5s
-    setTimeout(() => {
-      const replies = [
-        "Sounds good! Count me in.",
-        "Got it, looking forward to the match!",
-        "Thanks for the update, see you on the ground!",
-        "I'll be there right on time!"
-      ];
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
-      const botMsg = {
-        id: `msg_bot_${Date.now()}`,
-        senderId: 'usr_bot',
-        senderName: 'Rohan Sharma (Host)',
-        senderAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80',
-        text: randomReply,
-        time: 'Just now',
-        isMe: false
-      };
-
-      setChats(prev =>
-        prev.map(c => {
-          if (c.id === chatId) {
-            return {
-              ...c,
-              messages: [...c.messages, botMsg]
-            };
-          }
-          return c;
-        })
-      );
-    }, 1500);
   };
 
   // Notifications Actions
-  const markAllNotificationsRead = () => {
+  const markAllNotificationsRead = async () => {
+    try {
+      await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+        credentials: 'include'
+      });
+    } catch {}
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
     showToast('Notifications Cleared', 'All notifications marked as read.', 'info');
   };
 
-  const dismissNotification = (id) => {
+  const dismissNotification = async (id) => {
+    try {
+      await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+    } catch {}
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   // User Profile
-  const updateProfile = (updatedFields) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      ...updatedFields
-    }));
-    showToast('Profile Updated! 🌟', 'Your player details and preferences have been saved.');
+  const updateProfile = async (updatedFields) => {
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatedFields)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const updated = data.user || data;
+        setCurrentUser(prev => ({
+          ...prev,
+          ...updated
+        }));
+        showToast('Profile Updated! 🌟', 'Your player details and preferences have been saved.');
+        return { success: true, user: updated };
+      } else {
+        const err = await res.json();
+        showToast('Update Failed', err.error || 'Failed to update profile.', 'error');
+        return { success: false, error: err.error };
+      }
+    } catch {
+      setCurrentUser(prev => ({
+        ...prev,
+        ...updatedFields
+      }));
+      showToast('Profile Updated! 🌟', 'Your player details and preferences have been saved locally.');
+      return { success: true };
+    }
   };
 
   // Turf Owner Actions
@@ -779,6 +907,7 @@ export const AppProvider = ({ children }) => {
 
       const res = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
+        credentials: 'include',
         headers,
         body: JSON.stringify({ status: 'confirmed' })
       });
@@ -804,6 +933,7 @@ export const AppProvider = ({ children }) => {
 
       const res = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
+        credentials: 'include',
         headers,
         body: JSON.stringify({ status: 'rejected' })
       });
@@ -835,6 +965,7 @@ export const AppProvider = ({ children }) => {
 
       const res = await fetch('/api/turfs', {
         method: 'POST',
+        credentials: 'include',
         headers,
         body: JSON.stringify(payload)
       });
@@ -944,6 +1075,7 @@ export const AppProvider = ({ children }) => {
         isSameCity,
         authToken,
         authRole,
+        authLoading,
         login,
         logout,
         theme,

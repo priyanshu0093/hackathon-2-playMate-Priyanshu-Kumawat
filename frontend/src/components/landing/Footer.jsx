@@ -1,23 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const Footer = () => {
   return (
-    <footer className="bg-white border-t border-[#E5EDF7] pt-14 pb-10 text-[#687587]">
+    <footer className="bg-white dark:bg-slate-900 border-t border-[#E5EDF7] dark:border-slate-800 pt-14 pb-10 text-[#687587] dark:text-slate-400 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-[#E5EDF7]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-[#E5EDF7] dark:border-slate-800">
           {/* Brand info */}
           <div className="lg:col-span-2 space-y-4">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#2F80ED] to-[#56CCF2] flex items-center justify-center text-white shadow-md shadow-[#2F80ED]/20">
-                <span className="font-extrabold text-lg">PM</span>
-              </div>
-              <span className="font-extrabold text-xl tracking-tight text-[#172338]">
-                Play<span className="text-[#2F80ED]">Mate</span>
-              </span>
-            </Link>
-            <p className="text-xs sm:text-sm text-[#687587] leading-relaxed max-w-sm">
+            <Logo to="/" showTagline={true} size="md" />
+            <p className="text-xs sm:text-sm text-[#687587] dark:text-slate-400 leading-relaxed max-w-sm">
               PlayMate is India's modern sports matchmaking and ground booking network. Helping players connect, organize friendly matches, and access quality turfs without friction.
             </p>
             <div className="flex items-center gap-2 text-xs font-semibold text-[#20B486]">

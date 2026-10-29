@@ -45,7 +45,14 @@ export const MyActivity = () => {
   ];
 
   // User's joined/hosted matches
-  const myMatches = matches.filter((m) => m.roster?.some((p) => p.id === currentUser.id));
+  const myMatches = matches.filter(
+    (m) =>
+      currentUser?.id &&
+      (m.roster?.some((p) => p.id === currentUser.id) ||
+        m.participants?.some((p) => (p.user?.id || p.user || p.id) === currentUser.id) ||
+        m.host?.id === currentUser.id ||
+        m.host === currentUser.id)
+  );
 
   // Filter bookings according to activeTab with case-insensitive status matching
   const filteredBookings = bookings.filter((b) => {

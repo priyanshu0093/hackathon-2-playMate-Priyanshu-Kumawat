@@ -75,7 +75,7 @@ export const CreateMatchPage = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -85,7 +85,7 @@ export const CreateMatchPage = () => {
     );
     const coverImage = sportCategory ? sportCategory.image : SPORTS_CATEGORIES[0].image;
 
-    const newMatch = createMatch({
+    const newMatch = await createMatch({
       ...formData,
       coverImage,
       pricePerPerson: perPlayerCost,
@@ -104,7 +104,11 @@ export const CreateMatchPage = () => {
     } catch {}
 
     // Redirect to match details
-    navigate(`/player/matches/${newMatch.id}`);
+    if (newMatch?.id) {
+      navigate(`/player/matches/${newMatch.id}`);
+    } else {
+      navigate('/player/matches');
+    }
   };
 
   return (

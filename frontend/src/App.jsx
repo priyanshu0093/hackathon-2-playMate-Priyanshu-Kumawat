@@ -6,6 +6,7 @@ import { Toast } from './components/common/Toast';
 // Pages & Layouts
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { PlayerLayout } from './pages/PlayerLayout';
 import { OwnerLayout } from './pages/OwnerLayout';
 
@@ -49,6 +50,7 @@ export default function App() {
             {/* Public Landing & Login Pages */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Player Panel Routes */}
             <Route path="/player" element={<PlayerLayout />}>

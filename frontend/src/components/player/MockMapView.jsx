@@ -165,13 +165,25 @@ export const MockMapView = ({ grounds }) => {
                     <span className="font-extrabold text-[#172338]">₹{selectedGround.hourlyPrice}</span>
                     <span className="text-[#687587]"> /hr</span>
                   </div>
-                  <button
-                    onClick={() => navigate(`/player/grounds/${selectedGround.id}`)}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#2F80ED] hover:bg-[#1F6AD0] text-white text-xs font-bold flex items-center gap-1 shadow-xs"
-                  >
-                    <span>View Slots</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=12.9716,77.5946;${selectedGround.coordinates?.coordinates?.[1] || 12.9784},${selectedGround.coordinates?.coordinates?.[0] || 77.6408}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1.5 rounded-xl border border-[#E5EDF7] hover:bg-[#F4F8FD] text-[#2F80ED] text-xs font-semibold flex items-center gap-1 shadow-xs"
+                      title="Open directions in OpenStreetMap"
+                    >
+                      <Navigation className="w-3 h-3" />
+                      <span className="hidden sm:inline">Directions</span>
+                    </a>
+                    <button
+                      onClick={() => navigate(`/player/grounds/${selectedGround.id}`)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#2F80ED] hover:bg-[#1F6AD0] text-white text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <span>View Slots</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

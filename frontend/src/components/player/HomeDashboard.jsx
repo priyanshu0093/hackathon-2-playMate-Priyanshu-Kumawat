@@ -60,7 +60,7 @@ export const HomeDashboard = () => {
               <span>Good afternoon in {selectedCity}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Welcome back, {currentUser.name.split(' ')[0]}! 👋
+              Welcome back, {currentUser?.name ? currentUser.name.split(' ')[0] : 'Player'}! 👋
             </h1>
             <p className="text-xs sm:text-sm text-white/80 max-w-xl">
               There are <strong className="text-white underline">{cityMatches.length} matches</strong> looking for players in {selectedCity} today. Lace up and join the game!
@@ -185,7 +185,7 @@ export const HomeDashboard = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredMatches.slice(0, 6).map((match) => {
-              const isJoined = match.roster?.some((p) => p.id === currentUser.id);
+              const isJoined = currentUser?.id && match.roster?.some((p) => p.id === currentUser.id);
 
               return (
                 <motion.div

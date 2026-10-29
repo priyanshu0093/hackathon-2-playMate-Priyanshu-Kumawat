@@ -213,8 +213,8 @@ export const NotificationsAndChat = () => {
 
                   {msg.isMe && (
                     <ImageWithFallback
-                      src={currentUser.avatar}
-                      alt={currentUser.name}
+                      src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
+                      alt={currentUser?.name || 'You'}
                       className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-[#2F80ED]/30"
                     />
                   )}

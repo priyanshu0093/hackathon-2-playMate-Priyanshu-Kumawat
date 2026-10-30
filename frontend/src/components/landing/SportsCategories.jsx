@@ -56,7 +56,7 @@ export const SportsCategories = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-50px' }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6"
         >
           {SPORTS_CATEGORIES.map((sport) => {
             const Icon = sportIcons[sport.name] || Trophy;
@@ -67,7 +67,7 @@ export const SportsCategories = () => {
                 variants={itemVariants}
                 whileHover={{ y: -6 }}
                 onClick={() => navigate(`/player/matches?sport=${sport.name}`)}
-                className="group relative bg-[#F4F8FD] rounded-2xl overflow-hidden border border-[#E5EDF7] p-3.5 hover:shadow-xl hover:shadow-[#2F80ED]/10 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                className="group relative bg-[#F4F8FD] rounded-2xl overflow-hidden border border-[#E5EDF7] p-2.5 sm:p-3.5 hover:shadow-xl hover:shadow-[#2F80ED]/10 transition-all duration-300 cursor-pointer flex flex-col justify-between"
               >
                 {/* Photo container */}
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-3 bg-slate-200">

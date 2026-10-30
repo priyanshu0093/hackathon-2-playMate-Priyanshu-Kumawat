@@ -38,7 +38,7 @@ export const PlayerLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F8FD]">
       <Navbar variant="player" />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 md:pb-16">
         <Outlet />
       </main>
       <Footer />

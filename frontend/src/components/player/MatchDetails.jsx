@@ -177,21 +177,21 @@ export const MatchDetails = () => {
   return (
     <div className="max-w-4xl mx-auto pb-24 space-y-6">
       {/* Back button & top bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <button
           onClick={() => navigate('/player/matches')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors cursor-pointer min-h-[36px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Matches</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <a
             href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all"
+            className="px-3 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all min-h-[36px]"
             title="Open directions in OpenStreetMap"
           >
             <Navigation className="w-3.5 h-3.5 text-[#2F80ED]" />
@@ -199,14 +199,14 @@ export const MatchDetails = () => {
           </a>
           <button
             onClick={() => setInviteModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all cursor-pointer min-h-[36px]"
           >
             <Share2 className="w-3.5 h-3.5 text-[#2F80ED]" />
             <span>Invite</span>
           </button>
           <Link
             to={`/player/split/${match.id}`}
-            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all"
+            className="px-3 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all min-h-[36px]"
           >
             <Receipt className="w-3.5 h-3.5 text-[#20B486]" />
             <span>Split Bill</span>
@@ -215,9 +215,9 @@ export const MatchDetails = () => {
       </div>
 
       {/* Main Cover Banner */}
-      <div className="relative rounded-3xl overflow-hidden aspect-[21/9] min-h-[220px] shadow-lg border border-[#E5EDF7]">
+      <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden aspect-[16/9] sm:aspect-[21/9] min-h-[190px] sm:min-h-[220px] shadow-lg border border-[#E5EDF7]">
         <ImageWithFallback src={match.coverImage} alt={match.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#172338]/85 via-[#172338]/30 to-transparent flex flex-col justify-between p-6 text-white">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#172338]/85 via-[#172338]/30 to-transparent flex flex-col justify-between p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-white text-[#172338] shadow-xs">

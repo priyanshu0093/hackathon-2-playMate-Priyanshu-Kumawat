@@ -83,10 +83,10 @@ export const FindGrounds = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-[#E5EDF7] shadow-xs self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-[#E5EDF7] shadow-xs w-full sm:w-auto">
           <button
             onClick={() => setViewMode('list')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[38px] ${
               viewMode === 'list'
                 ? 'bg-[#2F80ED] text-white shadow-xs'
                 : 'text-[#687587] hover:text-[#172338]'
@@ -97,7 +97,7 @@ export const FindGrounds = () => {
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[38px] ${
               viewMode === 'map'
                 ? 'bg-[#2F80ED] text-white shadow-xs'
                 : 'text-[#687587] hover:text-[#172338]'
@@ -150,7 +150,7 @@ export const FindGrounds = () => {
         </div>
 
         {/* Sport Horizontal Filter */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x scrollbar-none">
           <button
             onClick={() => setSelectedSport('All')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${

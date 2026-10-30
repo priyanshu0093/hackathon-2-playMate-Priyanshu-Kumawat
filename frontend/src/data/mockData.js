@@ -421,6 +421,186 @@ export const INITIAL_MATCHES = [
     roster: [
       { id: 'usr_ind_3', name: 'Priya Sharma (Host)', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80', role: 'Player', status: 'Host' }
     ]
+  },
+  {
+    id: 'match_7',
+    title: 'Koramangala Friday Night Futsal League',
+    sport: 'Football',
+    coverImage: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1200&q=80',
+    host: {
+      id: 'usr_futsal',
+      name: 'Sahil Kapoor',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      rating: 4.9,
+      verified: true
+    },
+    date: 'Fri, 31 Oct',
+    time: '8:00 PM - 9:30 PM',
+    duration: '1.5 hrs',
+    venue: 'Urban Kick Turf Arena, Koramangala 4th Block',
+    venueId: 'ground_1',
+    distance: '2.1 km away',
+    city: 'Bangalore',
+    playersJoined: 8,
+    totalSpots: 10,
+    pricePerPerson: 200,
+    totalCost: 2000,
+    skillLevel: 'Intermediate',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Fast-paced 5v5 futsal on state-of-the-art synthetic turf. Low-bounce balls, electronic scoreboard, and energy drinks provided.',
+    rules: [
+      'Turf boots or flat trainers only',
+      'No slide tackling permitted',
+      'Bibs and match balls provided'
+    ],
+    roster: [
+      { id: 'usr_futsal', name: 'Sahil Kapoor (Host)', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Forward', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_8',
+    title: 'Indore Floodlit Box Cricket Superstars',
+    sport: 'Cricket',
+    coverImage: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80',
+    host: {
+      id: 'usr_ind_cricket',
+      name: 'Yash Vardhan',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+      rating: 4.95,
+      verified: true
+    },
+    date: 'Saturday, 01 Nov',
+    time: '7:30 PM - 9:30 PM',
+    duration: '2.0 hrs',
+    venue: 'Royal Strikers Box Cricket Ground, Vijay Nagar',
+    venueId: 'ground_indore_1',
+    distance: '1.9 km away',
+    city: 'Indore',
+    playersJoined: 12,
+    totalSpots: 16,
+    pricePerPerson: 160,
+    totalCost: 2560,
+    skillLevel: 'All Levels',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Floodlight night box cricket tournament style! Super-over playoffs, English willow bats, and live DJ music during overs.',
+    rules: [
+      'Direct wall hit over boundary line is out',
+      'Bats and balls provided at the pitch',
+      'Fair play strictly observed'
+    ],
+    roster: [
+      { id: 'usr_ind_cricket', name: 'Yash Vardhan (Host)', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80', role: 'All-Rounder', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_9',
+    title: 'Indiranagar Pro Badminton Smashers',
+    sport: 'Badminton',
+    coverImage: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80',
+    host: {
+      id: 'usr_baddy_pro',
+      name: 'Ritu Sen',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+      rating: 4.88,
+      verified: true
+    },
+    date: 'Sunday, 02 Nov',
+    time: '9:00 AM - 10:30 AM',
+    duration: '1.5 hrs',
+    venue: 'Apex Badminton Arena, Indiranagar',
+    venueId: 'ground_3',
+    distance: '3.0 km away',
+    city: 'Bangalore',
+    playersJoined: 3,
+    totalSpots: 4,
+    pricePerPerson: 175,
+    totalCost: 700,
+    skillLevel: 'Advanced',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Fast-paced advanced doubles badminton on BWF-standard synthetic rubber flooring. High smashes, net play, and Yonex feather shuttles.',
+    rules: [
+      'Non-marking badminton shoes mandatory',
+      'Yonex feather shuttles provided',
+      'Rally point scoring system (21 points)'
+    ],
+    roster: [
+      { id: 'usr_baddy_pro', name: 'Ritu Sen (Host)', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80', role: 'Player', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_10',
+    title: 'Vijay Nagar Sunset Tennis Doubles',
+    sport: 'Tennis',
+    coverImage: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=1200&q=80',
+    host: {
+      id: 'usr_tennis_ind',
+      name: 'Manish Rawat',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      rating: 4.92,
+      verified: true
+    },
+    date: 'Sunday, 02 Nov',
+    time: '5:00 PM - 6:30 PM',
+    duration: '1.5 hrs',
+    venue: 'Holkar Grand Tennis Courts, Vijay Nagar',
+    venueId: 'ground_indore_1',
+    distance: '2.8 km away',
+    city: 'Indore',
+    playersJoined: 3,
+    totalSpots: 4,
+    pricePerPerson: 220,
+    totalCost: 880,
+    skillLevel: 'Intermediate',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'Synthetic hard court doubles duel under the golden sunset. Wilson US Open pressurized balls and hydration station included.',
+    rules: [
+      'Standard non-marking tennis shoes required',
+      'Best of 3 sets with tie-breaker',
+      'Warm up 10 mins prior'
+    ],
+    roster: [
+      { id: 'usr_tennis_ind', name: 'Manish Rawat (Host)', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Player', status: 'Host' }
+    ]
+  },
+  {
+    id: 'match_11',
+    title: 'Whitefield 3v3 Half-Court Hoop Battle',
+    sport: 'Basketball',
+    coverImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+    host: {
+      id: 'usr_hoops',
+      name: 'Karan Mehra',
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80',
+      rating: 4.85,
+      verified: true
+    },
+    date: 'Saturday, 01 Nov',
+    time: '6:30 PM - 8:00 PM',
+    duration: '1.5 hrs',
+    venue: 'Urban Hoops Basketball Arena, Whitefield',
+    venueId: 'ground_5',
+    distance: '5.2 km away',
+    city: 'Bangalore',
+    playersJoined: 6,
+    totalSpots: 9,
+    pricePerPerson: 160,
+    totalCost: 1440,
+    skillLevel: 'Intermediate',
+    status: 'Spots Available',
+    isPublic: true,
+    description: 'High energy 3v3 half-court competition. Spring-loaded rims, Spalding TF-1000 basketballs, and scoreboard with 12-second shot clock.',
+    rules: [
+      'Outdoor basketball shoes required',
+      'Check ball at the top of the key after each score',
+      '1s and 2s scoring up to 21 points'
+    ],
+    roster: [
+      { id: 'usr_hoops', name: 'Karan Mehra (Host)', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80', role: 'Guard', status: 'Host' }
+    ]
   }
 ];
 

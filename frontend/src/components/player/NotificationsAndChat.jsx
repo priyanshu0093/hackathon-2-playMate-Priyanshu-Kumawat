@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   Trash2,
   Info,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ImageWithFallback } from '../common/ImageWithFallback';
@@ -30,6 +31,7 @@ export const NotificationsAndChat = () => {
 
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'notifications'
   const [activeChatId, setActiveChatId] = useState(chats[0]?.id || 'chat_match_1');
+  const [mobileChatView, setMobileChatView] = useState('rooms'); // 'rooms' | 'conversation'
   const [messageText, setMessageText] = useState('');
 
   const currentChat = chats.find((c) => c.id === activeChatId) || chats[0];
@@ -85,7 +87,7 @@ export const NotificationsAndChat = () => {
         /* Match Group Chat UI */
         <div className="bg-white rounded-3xl border border-[#E5EDF7] shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[580px]">
           {/* Chat Rooms List (Left 4 cols) */}
-          <div className="md:col-span-4 border-r border-[#E5EDF7] bg-[#F4F8FD]/50 flex flex-col">
+          <div className={`${mobileChatView === 'conversation' ? 'hidden md:flex' : 'flex'} md:col-span-4 border-r border-[#E5EDF7] bg-[#F4F8FD]/50 flex-col`}>
             <div className="p-4 border-b border-[#E5EDF7]">
               <span className="text-xs font-bold text-[#172338] uppercase tracking-wider">
                 My Match Lineups
@@ -100,7 +102,10 @@ export const NotificationsAndChat = () => {
                 return (
                   <button
                     key={c.id}
-                    onClick={() => setActiveChatId(c.id)}
+                    onClick={() => {
+                      setActiveChatId(c.id);
+                      setMobileChatView('conversation');
+                    }}
                     className={`w-full p-4 text-left flex items-start gap-3 transition-colors ${
                       isCurrent ? 'bg-white border-l-4 border-[#2F80ED]' : 'hover:bg-white/60'
                     }`}
@@ -129,27 +134,35 @@ export const NotificationsAndChat = () => {
           </div>
 
           {/* Chat Window (Right 8 cols) */}
-          <div className="md:col-span-8 flex flex-col bg-white">
+          <div className={`${mobileChatView === 'rooms' ? 'hidden md:flex' : 'flex'} md:col-span-8 flex-col bg-white`}>
             {/* Chat Header */}
             {currentChat && (
-              <div className="p-4 border-b border-[#E5EDF7] flex items-center justify-between bg-white">
-                <div className="flex items-center gap-3">
+              <div className="p-3 sm:p-4 border-b border-[#E5EDF7] flex items-center justify-between bg-white gap-2">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setMobileChatView('rooms')}
+                    className="md:hidden p-2 -ml-1 text-[#687587] hover:text-[#172338] rounded-xl hover:bg-[#F4F8FD] transition-colors shrink-0"
+                    aria-label="Back to match rooms"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
                   <ImageWithFallback
                     src={currentChat.avatar}
                     alt={currentChat.title}
-                    className="w-10 h-10 rounded-2xl object-cover"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl object-cover shrink-0"
                   />
-                  <div>
-                    <h3 className="text-sm font-bold text-[#172338]">{currentChat.title}</h3>
-                    <p className="text-[11px] text-[#687587] flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#20B486]" />
-                      <span>{currentChat.subtitle}</span>
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm font-bold text-[#172338] truncate">{currentChat.title}</h3>
+                    <p className="text-[10px] sm:text-[11px] text-[#687587] flex items-center gap-1.5 truncate">
+                      <span className="w-2 h-2 rounded-full bg-[#20B486] shrink-0" />
+                      <span className="truncate">{currentChat.subtitle}</span>
                       <span className="text-slate-300">•</span>
                       <Link
                         to={`/player/matches/${currentChat.matchId}`}
-                        className="text-[#2F80ED] hover:underline font-medium"
+                        className="text-[#2F80ED] hover:underline font-medium shrink-0"
                       >
-                        View Roster
+                        Roster
                       </Link>
                     </p>
                   </div>
@@ -157,9 +170,9 @@ export const NotificationsAndChat = () => {
 
                 <Link
                   to={`/player/split/${currentChat.matchId}`}
-                  className="px-3 py-1.5 bg-[#F4F8FD] hover:bg-[#D9EAFE] text-[#2F80ED] text-xs font-semibold rounded-xl transition-colors"
+                  className="px-2.5 sm:px-3 py-1.5 bg-[#F4F8FD] hover:bg-[#D9EAFE] text-[#2F80ED] text-[11px] sm:text-xs font-semibold rounded-xl transition-colors shrink-0"
                 >
-                  Split Ground Bill
+                  Split Bill
                 </Link>
               </div>
             )}

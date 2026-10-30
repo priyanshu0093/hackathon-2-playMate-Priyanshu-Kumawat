@@ -5,7 +5,7 @@ import { Logo } from '../common/Logo';
 
 export const Footer = () => {
   return (
-    <footer className="bg-white dark:bg-slate-900 border-t border-[#E5EDF7] dark:border-slate-800 pt-14 pb-10 text-[#687587] dark:text-slate-400 transition-colors">
+    <footer className="bg-white dark:bg-slate-900 border-t border-[#E5EDF7] dark:border-slate-800 pt-10 sm:pt-14 pb-24 md:pb-10 text-[#687587] dark:text-slate-400 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-[#E5EDF7] dark:border-slate-800">
           {/* Brand info */}

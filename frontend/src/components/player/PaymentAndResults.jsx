@@ -297,7 +297,42 @@ export const PaymentAndResults = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile card list for small screens */}
+        <div className="sm:hidden space-y-2.5">
+          {payments.map((p) => (
+            <div key={p.id} className="p-3 bg-[#F4F8FD] rounded-2xl border border-[#E5EDF7] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-[#172338] truncate">{p.name}</span>
+                <span className="font-bold text-xs text-[#2F80ED]">₹{p.share}</span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-[#E5EDF7]">
+                <button
+                  type="button"
+                  onClick={() => toggleAttendance(p.id)}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[38px] cursor-pointer ${
+                    p.attended ? 'bg-[#E6F8F2] text-[#20B486]' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {p.attended ? '✓ Present' : 'Absent'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => togglePayment(p.id)}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs min-h-[38px] cursor-pointer ${
+                    p.status === 'Paid'
+                      ? 'bg-[#E6F8F2] text-[#20B486] border border-[#20B486]/30'
+                      : 'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}
+                >
+                  {p.status === 'Paid' ? '✓ Paid' : '⏳ Pending'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-[#E5EDF7] text-[#687587]">

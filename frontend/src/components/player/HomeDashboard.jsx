@@ -48,7 +48,7 @@ export const HomeDashboard = () => {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-[#2F80ED]/20 overflow-hidden bg-slate-900"
+        className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-white shadow-xl shadow-[#2F80ED]/20 overflow-hidden bg-slate-900"
       >
         {/* Background Stadium Photo with Cinematic Gradient Overlay */}
         <div className="absolute inset-0">
@@ -135,7 +135,7 @@ export const HomeDashboard = () => {
         </div>
 
         {/* Sport Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x scrollbar-none">
           <button
             onClick={() => setSelectedSport('All')}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
@@ -264,7 +264,7 @@ export const HomeDashboard = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="pt-3 mt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                    <div className="pt-3 mt-3 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-2">
                       <div className="text-xs">
                         <span className="font-bold text-[#172338]">
                           {match.playersJoined}/{match.totalSpots} spots

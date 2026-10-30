@@ -135,7 +135,7 @@ export const FindMatches = () => {
 
         <Link
           to="/player/create-match"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#2F80ED] hover:bg-[#1F6AD0] text-white font-bold text-xs shadow-md shadow-[#2F80ED]/20 transition-all self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#2F80ED] hover:bg-[#1F6AD0] text-white font-bold text-xs shadow-md shadow-[#2F80ED]/20 transition-all w-full sm:w-auto min-h-[42px]"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Host a Match</span>
@@ -165,7 +165,7 @@ export const FindMatches = () => {
         </div>
 
         {/* Sport Horizontal Filter */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x scrollbar-none">
           <button
             onClick={() => handleSportChange('All')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
@@ -260,7 +260,7 @@ export const FindMatches = () => {
 
         {/* Clear Filters indicator */}
         {hasActiveFilters && (
-          <div className="flex items-center justify-between pt-2 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
             <span className="text-[#687587]">
               Showing <strong className="text-[#172338]">{filteredMatches.length}</strong> matching matches in {selectedCity}
             </span>
@@ -387,7 +387,7 @@ export const FindMatches = () => {
                     </div>
 
                     {/* Progress & Join CTA */}
-                    <div className="pt-4 mt-4 border-t border-[#F1F5F9] flex items-center justify-between">
+                    <div className="pt-4 mt-4 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-2.5">
                       <div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[#172338]">
                           <Users className="w-3.5 h-3.5 text-[#2F80ED]" />

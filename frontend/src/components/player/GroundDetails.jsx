@@ -116,27 +116,27 @@ export const GroundDetails = () => {
   return (
     <div className="max-w-5xl mx-auto pb-24 space-y-6">
       {/* Back button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <button
           onClick={() => navigate('/player/grounds')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors min-h-[36px]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Grounds</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <a
             href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all"
+            className="px-3.5 py-1.5 rounded-xl border border-[#E5EDF7] bg-white hover:bg-[#F4F8FD] text-xs font-semibold text-[#172338] flex items-center gap-1.5 shadow-xs transition-all min-h-[36px]"
             title="Open directions in OpenStreetMap"
           >
             <Navigation className="w-3.5 h-3.5 text-[#2F80ED]" />
             <span>Get Directions</span>
           </a>
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#E6F8F2] text-[#20B486] flex items-center gap-1.5">
+          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#E6F8F2] text-[#20B486] flex items-center gap-1.5 min-h-[36px]">
             <ShieldCheck className="w-3.5 h-3.5" /> Verified PlayMate Turf
           </span>
         </div>
@@ -144,13 +144,13 @@ export const GroundDetails = () => {
 
       {/* Main Image Gallery */}
       <div className="space-y-3">
-        <div className="relative aspect-[16/8] sm:aspect-[21/9] rounded-3xl overflow-hidden shadow-lg border border-[#E5EDF7] bg-slate-900">
+        <div className="relative aspect-[16/10] sm:aspect-[21/9] min-h-[200px] sm:min-h-[220px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg border border-[#E5EDF7] bg-slate-900">
           <ImageWithFallback
             src={galleryImages[activePhotoIndex]}
             alt={ground.name}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#172338]/80 via-transparent to-transparent flex items-end p-6">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#172338]/85 via-transparent to-transparent flex items-end p-4 sm:p-6">
             <div className="text-white">
               <span className="text-xs font-bold uppercase tracking-wider bg-[#2F80ED] text-white px-2.5 py-1 rounded-md inline-block mb-1.5">
                 {ground.category}
@@ -168,7 +168,7 @@ export const GroundDetails = () => {
 
         {/* Gallery Thumbnails */}
         {galleryImages.length > 1 && (
-          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x scrollbar-none">
             {galleryImages.map((img, idx) => (
               <button
                 key={idx}

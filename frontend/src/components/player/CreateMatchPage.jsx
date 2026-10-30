@@ -141,13 +141,13 @@ export const CreateMatchPage = () => {
           <label className="block text-xs font-bold text-[#172338] mb-2">
             Select Sport <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
             {SPORTS_CATEGORIES.map((sport) => (
               <button
                 type="button"
                 key={sport.id}
                 onClick={() => setFormData({ ...formData, sport: sport.name })}
-                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
+                className={`p-2 sm:p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
                   formData.sport === sport.name
                     ? 'border-[#2F80ED] bg-[#D9EAFE]/40 text-[#2F80ED] shadow-xs ring-2 ring-[#2F80ED]/30'
                     : 'border-[#E5EDF7] hover:bg-[#F4F8FD] text-[#687587]'
@@ -156,7 +156,7 @@ export const CreateMatchPage = () => {
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100">
                   <ImageWithFallback src={sport.image} alt={sport.name} className="w-full h-full object-cover" />
                 </div>
-                <span className="text-xs font-bold leading-tight">{sport.name}</span>
+                <span className="text-[11px] sm:text-xs font-bold leading-tight truncate w-full">{sport.name}</span>
               </button>
             ))}
           </div>
@@ -368,17 +368,17 @@ export const CreateMatchPage = () => {
         </div>
 
         {/* Submit Button */}
-        <div className="pt-2 flex items-center justify-end gap-3">
+        <div className="pt-2 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-5 py-2.5 rounded-xl text-xs font-semibold text-[#687587] hover:bg-[#F4F8FD] transition-colors"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-semibold text-[#687587] hover:bg-[#F4F8FD] transition-colors text-center"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-7 py-3 rounded-xl text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] shadow-md shadow-[#2F80ED]/30 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+            className="w-full sm:w-auto px-7 py-3 rounded-xl text-xs font-bold text-white bg-[#2F80ED] hover:bg-[#1F6AD0] shadow-md shadow-[#2F80ED]/30 transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5 min-h-[44px]"
           >
             <Sparkles className="w-4 h-4" />
             <span>Create Match Now</span>

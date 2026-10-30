@@ -10,7 +10,8 @@ export const Logo = ({
   size = 'md', // 'sm' | 'md' | 'lg'
   badge = null,
   showTagline = false,
-  className = ''
+  className = '',
+  light = false
 }) => {
   const iconSizes = {
     sm: 'w-7 h-7',
@@ -67,8 +68,8 @@ export const Logo = ({
       {/* Wordmark */}
       <div className="flex flex-col justify-center leading-none">
         <div className="flex items-center gap-1.5">
-          <span className={`${textSizes[size]} font-extrabold tracking-tight text-[#172338] dark:text-white transition-colors`}>
-            Play<span className="text-[#2F80ED] dark:text-[#60A5FA]">Mate</span>
+          <span className={`${textSizes[size]} font-extrabold tracking-tight ${light ? 'text-white drop-shadow-md' : 'text-[#172338] dark:text-white'} transition-colors`}>
+            Play<span className={light ? 'text-[#60A5FA]' : 'text-[#2F80ED] dark:text-[#60A5FA]'}>Mate</span>
           </span>
           {badge && (
             <span className="text-[9px] font-extrabold tracking-wider px-1.5 py-0.5 rounded-md bg-[#D9EAFE] text-[#1F6AD0] dark:bg-[#1E293B] dark:text-[#60A5FA] uppercase border border-[#2F80ED]/20">
@@ -77,7 +78,7 @@ export const Logo = ({
           )}
         </div>
         {showTagline && (
-          <span className="text-[10px] text-[#687587] dark:text-slate-400 font-semibold tracking-wider uppercase mt-0.5">
+          <span className={`text-[10px] ${light ? 'text-white/80' : 'text-[#687587] dark:text-slate-400'} font-semibold tracking-wider uppercase mt-0.5`}>
             Sports & Turfs
           </span>
         )}

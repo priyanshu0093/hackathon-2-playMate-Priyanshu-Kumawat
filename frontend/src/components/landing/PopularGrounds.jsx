@@ -114,7 +114,7 @@ export const PopularGrounds = () => {
                 </div>
 
                 {/* Price and Book action */}
-                <div className="pt-4 mt-4 border-t border-[#F1F5F9] flex items-center justify-between">
+                <div className="pt-4 mt-4 border-t border-[#F1F5F9] flex flex-wrap items-center justify-between gap-2.5">
                   <div>
                     <span className="text-xs text-[#687587]">Starting at</span>
                     <p className="text-base font-extrabold text-[#172338]">

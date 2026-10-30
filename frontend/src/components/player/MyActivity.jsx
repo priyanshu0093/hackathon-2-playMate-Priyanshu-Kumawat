@@ -151,14 +151,14 @@ export const MyActivity = () => {
       </div>
 
       {/* Main Tabs (Upcoming, Pending, Completed, Cancelled) */}
-      <div className="flex items-center justify-between border-b border-[#E5EDF7] pb-2">
-        <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E5EDF7] pb-2 gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x scrollbar-none">
           {tabs.map((tab) => (
             <button
               key={tab}
               id={`tab-${tab.toLowerCase()}`}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all relative ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all relative ${
                 activeTab === tab
                   ? 'bg-[#2F80ED] text-white shadow-sm'
                   : 'text-[#687587] hover:text-[#172338] hover:bg-[#F4F8FD]'
@@ -170,7 +170,7 @@ export const MyActivity = () => {
         </div>
 
         {/* Sub-type filters */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-[#F4F8FD] p-1 rounded-xl border border-[#E5EDF7] text-xs font-medium">
+        <div className="flex items-center gap-1.5 bg-[#F4F8FD] p-1 rounded-xl border border-[#E5EDF7] text-xs font-medium self-start sm:self-auto">
           {['All', 'Turfs', 'Matches'].map((t) => (
             <button
               key={t}

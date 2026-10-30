@@ -484,17 +484,17 @@ export const PlayerProfile = () => {
             />
           </div>
 
-          <div className="pt-3 flex items-center justify-end gap-2">
+          <div className="pt-3 flex flex-col-reverse sm:flex-row items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setEditModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-[#687587] hover:bg-[#F4F8FD] rounded-xl cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold text-[#687587] hover:bg-[#F4F8FD] rounded-xl cursor-pointer text-center"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-[#2F80ED] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1F6AD0] cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#2F80ED] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1F6AD0] cursor-pointer text-center min-h-[42px]"
             >
               Save Profile
             </button>

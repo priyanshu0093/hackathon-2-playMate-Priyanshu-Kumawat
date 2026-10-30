@@ -241,33 +241,129 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-b from-[#D9EAFE]/40 via-[#F4F8FD] to-white relative overflow-hidden">
-      {/* Decorative background glow */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-[#BBD8F5]/30 rounded-full blur-3xl -z-10 pointer-events-none" />
+    <div className="min-h-screen flex flex-col justify-center items-center py-6 sm:py-10 px-3 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+      {/* Decorative soft ambient background glow */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[650px] h-[380px] bg-[#D9EAFE]/40 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-      {/* Header / Logo */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="flex justify-center mb-4">
-          <Logo to="/" size="lg" />
+      {/* Main Dual-Panel Responsive Auth Card */}
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl shadow-slate-300/40 border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12 my-auto">
+        {/* ========================================================= */}
+        {/* LEFT COLUMN: CRICKET ACTION VISUAL SHOWCASE (DESKTOP/LG)  */}
+        {/* ========================================================= */}
+        <div className="lg:col-span-5 hidden lg:flex flex-col justify-between relative p-8 text-white bg-slate-950 overflow-hidden select-none">
+          {/* Dynamic Cricket Image with Atmospheric Dark Overlay */}
+          <img
+            src="/images/cricket-login.jpg"
+            alt="Cricket Match under Floodlights"
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.12] scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070d18]/95 via-[#070d18]/50 to-[#070d18]/70" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#2F80ED]/25 via-transparent to-transparent" />
+
+          {/* Top Pill Badge */}
+          <div className="relative z-10 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/70 border border-white/20 backdrop-blur-md text-xs font-semibold text-white shadow-lg self-start">
+            <span className="text-base">🏏</span>
+            <span>Cricket & Turf Community</span>
+          </div>
+
+          {/* Center Motivational Copy & Feature Highlights */}
+          <div className="relative z-10 space-y-4 my-auto py-8">
+            <h3 className="text-3xl font-black text-white tracking-tight leading-tight drop-shadow-lg">
+              Step Up to the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] via-[#38BDF8] to-[#93C5FD]">Crease.</span>
+            </h3>
+            <p className="text-xs text-slate-200/90 leading-relaxed font-normal max-w-sm drop-shadow-sm">
+              Connect with passionate local cricket and sports players, book box cricket pitches & courts, split turf fees instantly, and never miss a game.
+            </p>
+
+            <div className="space-y-2.5 pt-2">
+              <div className="flex items-center gap-2.5 text-xs text-slate-200 font-medium">
+                <span className="w-5 h-5 rounded-lg bg-[#2F80ED]/30 border border-[#2F80ED]/50 flex items-center justify-center text-[#60A5FA] font-bold text-[10px]">
+                  ✓
+                </span>
+                <span>14,800+ Active Players in your city</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-slate-200 font-medium">
+                <span className="w-5 h-5 rounded-lg bg-[#20B486]/30 border border-[#20B486]/50 flex items-center justify-center text-[#20B486] font-bold text-[10px]">
+                  ✓
+                </span>
+                <span>140+ Verified Box Cricket & Multi-turfs</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-slate-200 font-medium">
+                <span className="w-5 h-5 rounded-lg bg-[#F2994A]/30 border border-[#F2994A]/50 flex items-center justify-center text-[#F2994A] font-bold text-[10px]">
+                  ✓
+                </span>
+                <span>Instant Per-Player Bill & Turf Cost Split</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Live Match Spotlight Card */}
+          <div className="relative z-10 p-3.5 rounded-2xl bg-slate-900/75 border border-white/20 backdrop-blur-xl shadow-xl flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2F80ED] to-[#56CCF2] flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
+              🏏
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-white truncate">Sunday Morning Box Cricket</p>
+                <span className="text-[10px] text-[#20B486] font-bold">14/16 Joined</span>
+              </div>
+              <p className="text-[10px] text-slate-300 truncate mt-0.5">Kickoff Arena • 8 Overs Tournament</p>
+            </div>
+          </div>
         </div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#172338]">
-          {isForgotPassword
-            ? 'Reset Your Password'
-            : isSignUp
-            ? `Create a ${activeRole === 'owner' ? 'Turf Owner' : 'Player'} Account`
-            : `Sign in to PlayMate`}
-        </h2>
-        <p className="mt-1 text-xs sm:text-sm text-[#687587]">
-          {isForgotPassword
-            ? 'Password recovery is documented as pending production SMTP configuration'
-            : activeRole === 'owner'
-            ? 'Manage your sports turfs, reservations & schedules'
-            : 'Find matches, join squad lineups & book sports venues'}
-        </p>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-8 shadow-xl shadow-[#2F80ED]/5 rounded-3xl border border-[#E5EDF7]">
+        {/* ========================================================= */}
+        {/* RIGHT COLUMN: COMPLETE FORM & AUTH CONTROLS               */}
+        {/* ========================================================= */}
+        <div className="lg:col-span-7 p-5 sm:p-8 md:p-10 flex flex-col justify-center bg-white">
+          {/* Mobile Cricket Header Banner (< lg) */}
+          <div className="lg:hidden relative h-36 min-[420px]:h-44 rounded-2xl overflow-hidden mb-6 border border-slate-200 shadow-md select-none">
+            <img
+              src="/images/cricket-login.jpg"
+              alt="Cricket Match"
+              className="w-full h-full object-cover object-center filter brightness-[0.72] contrast-[1.12]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/45 to-transparent flex flex-col justify-between p-3.5 text-white">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/70 border border-white/20 backdrop-blur-md text-[10px] font-bold self-start">
+                <span>🏏</span>
+                <span>PlayMate Cricket & Sports</span>
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-white leading-tight">Step Up to the Crease</h3>
+                <p className="text-[11px] text-slate-200 mt-0.5">Find matches, join squad lineups & book sports venues</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Header with Logo and Top Back Link */}
+          <div className="flex items-center justify-between mb-4">
+            <Logo to="/" size="md" />
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back Home</span>
+            </Link>
+          </div>
+
+          <div className="mb-5">
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#172338]">
+              {isForgotPassword
+                ? 'Reset Your Password'
+                : isSignUp
+                ? `Create a ${activeRole === 'owner' ? 'Turf Owner' : 'Player'} Account`
+                : `Sign in to PlayMate`}
+            </h2>
+            <p className="mt-1 text-xs text-[#687587]">
+              {isForgotPassword
+                ? 'Password recovery is documented as pending production SMTP configuration'
+                : activeRole === 'owner'
+                ? 'Manage your sports turfs, reservations & schedules'
+                : 'Find matches, join squad lineups & book sports venues'}
+            </p>
+          </div>
+
           {/* FORGOT PASSWORD VIEW */}
           {isForgotPassword ? (
             <div className="space-y-5">
@@ -430,11 +526,11 @@ export const LoginPage = () => {
                   ) : (
                     <GoogleIcon className="w-4 h-4 shrink-0" />
                   )}
-                  <span>
+                  <span className="truncate">
                     {isGoogleLoading
                       ? 'Connecting to Google...'
                       : isSignUp
-                      ? `Continue with Google (as ${activeRole === 'owner' ? 'Turf Owner' : 'Player'})`
+                      ? `Continue with Google (${activeRole === 'owner' ? 'Owner' : 'Player'})`
                       : 'Continue with Google'}
                   </span>
                 </button>
@@ -617,17 +713,17 @@ export const LoginPage = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Back to Landing Page link */}
-        <div className="text-center mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338]"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to Public Home</span>
-          </Link>
-        </div>
+      {/* Back to Landing Page link */}
+      <div className="text-center mt-6">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687587] hover:text-[#172338] transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Return to Public Home</span>
+        </Link>
       </div>
     </div>
   );

@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   ArrowRight,
   Star,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 
 export const HeroSection = () => {
@@ -66,14 +67,14 @@ export const HeroSection = () => {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[92vh] lg:min-h-[96vh] w-full overflow-hidden flex items-center justify-center bg-[#070d18]"
+      className="relative min-h-[110vh] sm:min-h-[118vh] lg:min-h-[125vh] w-full overflow-hidden flex items-center justify-center bg-[#070d18]"
     >
       {/* ============================================================ */}
       {/* FULL-WIDTH OPTIMIZED HERO BACKGROUND VIDEO & POSTER FALLBACK */}
       {/* ============================================================ */}
       <motion.div
         style={{ y: mediaY, scale: mediaScale }}
-        className="absolute inset-0 w-full h-[116%] -top-[8%] will-change-transform pointer-events-none select-none"
+        className="absolute inset-0 w-full h-[125%] -top-[12%] will-change-transform pointer-events-none select-none"
         aria-hidden="true"
       >
         {/* High-Quality Static Poster Image (Rendered immediately for fast LCP) */}
@@ -115,7 +116,7 @@ export const HeroSection = () => {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#070d18]/25 via-[#070d18]/55 to-[#070d18]/85" />
 
         {/* Bottom smooth fade into next section */}
-        <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#F4F8FD] dark:from-slate-900 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-36 sm:h-48 bg-gradient-to-t from-white dark:from-slate-900 via-white/40 dark:via-slate-900/40 to-transparent pointer-events-none" />
       </motion.div>
 
       {/* Ambient background glow accents */}
@@ -126,7 +127,7 @@ export const HeroSection = () => {
       {/* ============================================================ */}
       <motion.div
         style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 w-full text-center space-y-7 sm:space-y-8"
+        className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 sm:pt-40 sm:pb-32 lg:pt-44 lg:pb-40 w-full text-center space-y-7 sm:space-y-8"
       >
         {/* Pill Badge with Pulse Indicator */}
         <motion.div
@@ -147,7 +148,7 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.08] max-w-4xl mx-auto drop-shadow-2xl"
+          className="text-3xl min-[380px]:text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.1] max-w-4xl mx-auto drop-shadow-2xl"
         >
           Find Players.{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] via-[#38BDF8] to-[#93C5FD]">
@@ -161,7 +162,7 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="text-base sm:text-lg md:text-xl text-slate-100/95 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md"
+          className="text-sm sm:text-lg md:text-xl text-slate-100/95 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md px-2 sm:px-0"
         >
           PlayMate connects you with passionate sports players nearby. Create or join matches in seconds, reserve premium turf slots, split costs smoothly, and elevate your game.
         </motion.p>
@@ -171,20 +172,20 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="flex flex-wrap items-center justify-center gap-4 pt-2"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 w-full max-w-xs sm:max-w-none mx-auto"
         >
           <Link
             to="/player/matches"
-            className="group relative px-9 py-4 rounded-2xl bg-gradient-to-r from-[#2F80ED] to-[#1F6AD0] hover:from-[#1F6AD0] hover:to-[#1554A8] text-white font-bold text-sm sm:text-base shadow-2xl shadow-[#2F80ED]/40 hover:shadow-[#2F80ED]/60 transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-3 overflow-hidden"
+            className="w-full sm:w-auto group relative px-6 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-[#2F80ED] to-[#1F6AD0] hover:from-[#1F6AD0] hover:to-[#1554A8] text-white font-bold text-sm sm:text-base shadow-2xl shadow-[#2F80ED]/40 hover:shadow-[#2F80ED]/60 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-3 overflow-hidden min-h-[48px]"
           >
             <span className="relative z-10">Find a Match</span>
-            <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1.5 transition-transform" />
+            <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1.5 transition-transform shrink-0" />
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           </Link>
 
           <Link
             to="/player/grounds"
-            className="px-9 py-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/80 text-white font-bold text-sm sm:text-base backdrop-blur-xl border border-white/25 shadow-2xl hover:border-white/50 transition-all duration-300 transform hover:-translate-y-1 flex items-center gap-2"
+            className="w-full sm:w-auto px-6 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/80 text-white font-bold text-sm sm:text-base backdrop-blur-xl border border-white/25 shadow-2xl hover:border-white/50 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 min-h-[48px]"
           >
             <span>Explore Grounds</span>
           </Link>
@@ -197,24 +198,41 @@ export const HeroSection = () => {
           transition={{ duration: 0.7, delay: 0.6 }}
           className="pt-6 sm:pt-8 max-w-3xl mx-auto"
         >
-          <div className="grid grid-cols-3 gap-3 sm:gap-6 p-4 sm:p-6 rounded-3xl bg-slate-950/60 backdrop-blur-xl border border-white/20 shadow-2xl">
-            <div className="text-center border-r border-white/10 pr-2 sm:pr-4">
-              <p className="text-2xl sm:text-4xl font-black text-white tracking-tight">14.8k+</p>
-              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">Verified Players</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-6 p-3 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950/60 backdrop-blur-xl border border-white/20 shadow-2xl">
+            <div className="text-center border-r border-white/10 pr-1.5 sm:pr-4">
+              <p className="text-xl min-[380px]:text-2xl sm:text-4xl font-black text-white tracking-tight">14.8k+</p>
+              <p className="text-[10px] min-[380px]:text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1">Verified Players</p>
             </div>
 
-            <div className="text-center border-r border-white/10 px-2 sm:px-4">
-              <p className="text-2xl sm:text-4xl font-black text-white tracking-tight">140+</p>
-              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">Turfs & Courts</p>
+            <div className="text-center border-r border-white/10 px-1.5 sm:px-4">
+              <p className="text-xl min-[380px]:text-2xl sm:text-4xl font-black text-white tracking-tight">140+</p>
+              <p className="text-[10px] min-[380px]:text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1">Turfs & Courts</p>
             </div>
 
-            <div className="text-center pl-2 sm:pl-4">
-              <p className="text-2xl sm:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-1.5">
-                4.9 <Star className="w-5 sm:w-6 h-5 sm:h-6 text-amber-400 fill-amber-400 shrink-0" />
+            <div className="text-center pl-1.5 sm:pl-4">
+              <p className="text-xl min-[380px]:text-2xl sm:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-1 sm:gap-1.5">
+                4.9 <Star className="w-4 h-4 sm:w-6 sm:h-6 text-amber-400 fill-amber-400 shrink-0" />
               </p>
-              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">Community Rating</p>
+              <p className="text-[10px] min-[380px]:text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1">Community Rating</p>
             </div>
           </div>
+        </motion.div>
+
+        {/* Subtle Scroll Hint to showcase expanded video canvas */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.75 }}
+          className="pt-4 sm:pt-6 flex flex-col items-center justify-center gap-1.5 text-white/70 hover:text-white transition-colors cursor-pointer select-none"
+          onClick={() => {
+            const sportsEl = document.getElementById('sports');
+            if (sportsEl) sportsEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          <span className="text-[10px] sm:text-[11px] font-bold tracking-widest uppercase text-slate-300 drop-shadow-sm">
+            Scroll to explore matches & turfs
+          </span>
+          <ChevronDown className="w-4 h-4 animate-bounce text-[#38BDF8]" />
         </motion.div>
       </motion.div>
     </section>

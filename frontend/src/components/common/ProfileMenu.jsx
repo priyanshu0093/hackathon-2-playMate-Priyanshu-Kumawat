@@ -120,7 +120,7 @@ export const ProfileMenu = ({ role = 'player' }) => {
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label="User Profile and Settings Menu"
-        className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full bg-[#F4F8FD] dark:bg-slate-800 hover:bg-[#D9EAFE]/50 dark:hover:bg-slate-700/80 border border-[#E5EDF7] dark:border-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-[#2F80ED]/40"
+        className="flex items-center gap-1.5 sm:gap-2 pl-1 sm:pl-1.5 pr-2 sm:pr-2.5 py-1 rounded-full bg-[#F4F8FD] dark:bg-slate-800 hover:bg-[#D9EAFE]/50 dark:hover:bg-slate-700/80 border border-[#E5EDF7] dark:border-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-[#2F80ED]/40 min-h-[40px]"
       >
         <div className="relative">
           <ImageWithFallback
@@ -157,7 +157,7 @@ export const ProfileMenu = ({ role = 'player' }) => {
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="profile-menu-button"
-          className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-[#E5EDF7] dark:border-slate-800 py-2 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-[#E5EDF7] dark:border-slate-800 py-2 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         >
           {/* 1. Header: User Identity & Role */}
           <div className="px-4 py-3 border-b border-[#E5EDF7] dark:border-slate-800 bg-[#F4F8FD]/60 dark:bg-slate-800/40">

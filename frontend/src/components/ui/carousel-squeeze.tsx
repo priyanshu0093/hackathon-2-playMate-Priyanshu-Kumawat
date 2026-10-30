@@ -522,23 +522,24 @@ function Picture({ slide }: { slide: SqueezeSlide }) {
         minWidth: "100%",
     } as const;
 
-    if (slide.image) {
-        return (
-            <img
-                src={slide.image}
-                alt={slide.imageAlt ?? ""}
-                draggable={false}
-                className="absolute inset-y-0 left-1/2 h-full max-w-none -translate-x-1/2 object-cover"
-                style={box}
-            />
-        );
-    }
+    const fallback = "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1200&q=80";
+    const imageSrc = (slide.image && slide.image.trim() !== "") ? slide.image : fallback;
 
     return (
-        <span
-            aria-hidden="true"
-            className="absolute inset-y-0 left-1/2 -translate-x-1/2"
-            style={{ background: slide.background, ...box }}
+        <img
+            src={imageSrc}
+            alt={slide.imageAlt ?? ""}
+            draggable={false}
+            loading="eager"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src !== fallback) {
+                    target.src = fallback;
+                }
+            }}
+            className="absolute inset-y-0 left-1/2 h-full max-w-none -translate-x-1/2 object-cover"
+            style={box}
         />
     );
 }

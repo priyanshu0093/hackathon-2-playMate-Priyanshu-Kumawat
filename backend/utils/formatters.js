@@ -39,8 +39,22 @@ export const formatMatch = (match) => {
   const estimatedCost = match.estimatedCost || 0;
   const feePerPlayer = match.feePerPlayer || (estimatedCost > 0 ? Math.ceil(estimatedCost / maxPlayers) : 0);
 
+  const sportImages = {
+    cricket: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=900&q=80',
+    football: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80',
+    badminton: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80',
+    basketball: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=80',
+    tennis: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=900&q=80',
+    pickleball: 'https://images.unsplash.com/photo-1628891435222-065925dcb365?auto=format&fit=crop&w=900&q=80'
+  };
+  const sportKey = (match.sport || 'football').toLowerCase();
+  const coverImage = (match.coverImage && typeof match.coverImage === 'string' && match.coverImage.trim() !== '')
+    ? match.coverImage
+    : (sportImages[sportKey] || sportImages.football);
+
   return {
     ...match,
+    coverImage,
     id: match.id,
     playersJoined: participants.length,
     totalSpots: maxPlayers,
